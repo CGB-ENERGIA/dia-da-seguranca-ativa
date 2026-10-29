@@ -9,3 +9,4 @@ public/seed/
 !.env.example
 .claude/
 supabase/colaboradores-seed.sql
+supabase/historico/
