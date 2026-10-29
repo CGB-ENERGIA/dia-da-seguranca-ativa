@@ -42,7 +42,7 @@ const buscar = async <T,>(arq: string): Promise<T> => {
     let ult: unknown;
     for (let t = 0; t < 3; t++) {
       try {
-        const r = await fetch(`${base}seed/${arq}`, { cache: t ? "reload" : "default" });
+        const r = await fetch(`${base}seed/${arq}?v=${__BUILD__}${t ? `&t=${Date.now()}` : ""}`, { cache: t ? "reload" : "default" });
         if (!r.ok) throw new Error(`${arq}: HTTP ${r.status}`);
         const j = await r.json();
         void kvSet(`seed:${arq}`, j);

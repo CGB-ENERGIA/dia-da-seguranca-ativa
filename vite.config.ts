@@ -7,6 +7,7 @@ const base = process.env.BASE_PATH ?? "/";
 
 export default defineConfig({
   base,
+  define: { __BUILD__: JSON.stringify(String(Date.now())) },
   build: { target: ["es2020", "chrome87", "safari14"] },
   plugins: [
     react(),
