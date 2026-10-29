@@ -14,6 +14,31 @@ import { useAuth } from "./store/auth";
 import { useData } from "./store/data";
 import { iniciarSync } from "./lib/sync";
 
+/** Limpa service worker e caches (versão antiga presa no aparelho) e recarrega. */
+async function limparERecarregar() {
+  try { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); } catch { /* sem SW */ }
+  try { for (const k of await caches.keys()) await caches.delete(k); } catch { /* sem cache */ }
+  location.reload();
+}
+
+function FalhaCarga({ msg }: { msg: string }) {
+  useEffect(() => {
+    let ja = false;
+    try { ja = sessionStorage.getItem("dsa:auto-limpeza") === "1"; sessionStorage.setItem("dsa:auto-limpeza", "1"); } catch { /* */ }
+    if (!ja) void limparERecarregar(); // uma tentativa automática por sessão
+  }, []);
+  return (
+    <div className="grid h-full place-items-center bg-canvas p-8 text-center">
+      <div className="max-w-[420px]">
+        <h1 className="display text-[24px] text-brand">Não foi possível carregar os dados</h1>
+        <p className="mt-3 text-[14.5px] font-medium text-ink/60">Pode ser uma versão antiga guardada no aparelho ou conexão instável.</p>
+        <button className="btn btn-vinho mt-6 w-full" onClick={() => void limparERecarregar()}>Limpar e recarregar</button>
+        {msg && <p className="mt-4 break-words font-mono text-[11px] text-ink/40">{msg}</p>}
+      </div>
+    </div>
+  );
+}
+
 function Registrar() {
   const chapa = useAuth(s => s.chapa);
   return chapa ? <RegistrarShell /> : <Login />;
@@ -27,14 +52,14 @@ function Relatorio() {
 export default function App() {
   const chapa = useAuth(s => s.chapa);
   const sair = useAuth(s => s.sair);
-  const { pronto, erro, mapa, carregar } = useData();
+  const { pronto, erro, erroMsg, mapa, carregar } = useData();
 
   useEffect(() => { void carregar(); iniciarSync(); }, [carregar]);
   useEffect(() => { if (pronto) (window as unknown as { __dsa_ok: boolean }).__dsa_ok = true; }, [pronto]);
   // nome salvo que não existe mais no cadastro
   useEffect(() => { if (pronto && chapa && !mapa.has(chapa)) sair(); }, [pronto, chapa, mapa, sair]);
 
-  if (erro) return <div className="grid h-full place-items-center p-8 text-center font-bold text-brand">Não foi possível carregar os dados. Verifique a conexão e abra de novo.</div>;
+  if (erro) return <FalhaCarga msg={erroMsg} />;
   if (!pronto) return <div className="grid h-full place-items-center bg-canvas"><div className="esqueleto h-16 w-64" /></div>;
 
   return (

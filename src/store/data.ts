@@ -16,6 +16,7 @@ const vazio = (): Edicoes => ({ colabs: {}, equipes: {}, meta: 1, metas: {} });
 interface DataState {
   pronto: boolean;
   erro: boolean;
+  erroMsg: string;
   origem: string;
   colabsBase: Colab[];
   equipesBase: Equipe[];
@@ -38,11 +39,17 @@ interface DataState {
 const base = import.meta.env.BASE_URL;
 const buscar = async <T,>(arq: string): Promise<T> => {
   try {
-    const r = await fetch(`${base}seed/${arq}`);
-    if (!r.ok) throw new Error(String(r.status));
-    const j = await r.json();
-    void kvSet(`seed:${arq}`, j);
-    return j;
+    let ult: unknown;
+    for (let t = 0; t < 3; t++) {
+      try {
+        const r = await fetch(`${base}seed/${arq}`, { cache: t ? "reload" : "default" });
+        if (!r.ok) throw new Error(`${arq}: HTTP ${r.status}`);
+        const j = await r.json();
+        void kvSet(`seed:${arq}`, j);
+        return j as T;
+      } catch (e) { ult = e; await new Promise(ok => setTimeout(ok, 600 * (t + 1))); }
+    }
+    throw ult;
   } catch (e) {
     const c = await kvGet<T>(`seed:${arq}`);
     if (c) return c;
@@ -67,7 +74,7 @@ export const useData = create<DataState>((set, get) => {
   };
 
   return {
-    pronto: false, erro: false, origem: "", colabsBase: [], equipesBase: [], edicoes: vazio(),
+    pronto: false, erro: false, erroMsg: "", origem: "", colabsBase: [], equipesBase: [], edicoes: vazio(),
     colabs: [], mapa: new Map(), equipes: [], historico: [], remotos: [], locais: [],
 
     async carregar() {
@@ -97,8 +104,8 @@ export const useData = create<DataState>((set, get) => {
           locais: await regsLocais(),
         });
         void get().atualizarRemoto();
-      } catch {
-        set({ erro: true });
+      } catch (e) {
+        set({ erro: true, erroMsg: String((e as Error)?.message ?? e) });
       }
     },
     async recarregarLocais() { set({ locais: await regsLocais() }); },
