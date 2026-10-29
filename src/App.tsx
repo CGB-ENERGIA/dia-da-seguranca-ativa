@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import Shell from "./components/Shell";
 import RegistrarShell from "./components/RegistrarShell";
-import Home from "./pages/Home";
+
 import Login from "./pages/Login";
 import Painel from "./pages/Painel";
 import Colaboradores from "./pages/Colaboradores";
@@ -34,7 +34,7 @@ export default function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route index element={<Home />} />
+        <Route index element={<Navigate to="/registrar" replace />} />
         <Route path="registrar" element={<Registrar />}>
           <Route index element={<Lancar />} />
           <Route path="meus" element={<Meus />} />
