@@ -76,6 +76,7 @@ export default function Lancar() {
   const [processando, setProcessando] = useState(false);
   const [salvo, setSalvo] = useState<{ ok: boolean; nome: string; qtd: number } | null>(null);
   const video = useRef<HTMLVideoElement>(null);
+  const [ar, setAr] = useState(4 / 3);
   const arquivo = useRef<HTMLInputElement>(null);
   const [relogio, setRelogio] = useState(new Date());
 
@@ -119,6 +120,7 @@ export default function Lancar() {
       local: agoraLocal?.label ?? "Localização indisponível",
       coordenadas: agoraLocal ? `${coordTexto(agoraLocal.lat, agoraLocal.lon)} ±${agoraLocal.prec}m` : undefined,
     });
+    setAr(w / h);
     setFoto({ blob, url: URL.createObjectURL(blob) });
     setProcessando(false);
     fecharCamera();
@@ -235,7 +237,7 @@ export default function Lancar() {
                   <div className="flex items-center gap-3 rounded-2xl bg-soft p-3.5">
                     <Check size={18} className="text-oliva" strokeWidth={3} />
                     <span className="font-mono text-[16px] font-bold text-brand">{equipe}</span>
-                    <button className="ml-auto grid h-8 w-8 place-items-center rounded-full text-ink/40 hover:bg-field hover:text-brand" onClick={() => { setEquipe(""); setBusca(""); }} aria-label="Trocar equipe"><X size={16} /></button>
+                    <button className="ml-auto grid h-10 w-10 place-items-center rounded-full text-ink/40 hover:bg-field hover:text-brand" onClick={() => { setEquipe(""); setBusca(""); }} aria-label="Trocar equipe"><X size={16} /></button>
                   </div>
                 ) : (
                   <>
@@ -296,12 +298,12 @@ export default function Lancar() {
                 </button>
               </div>
 
-              <div className="relative mx-5 mb-5 aspect-[4/3] overflow-hidden rounded-2xl bg-vinho-950">
+              <div className="relative mx-auto mb-5 max-h-[68dvh] w-[calc(100%-2.5rem)] overflow-hidden rounded-2xl bg-vinho-950" style={{ aspectRatio: ar }}>
                 {foto ? (
                   <img src={foto.url} alt="Pré-visualização carimbada" className="h-full w-full object-contain" />
                 ) : stream ? (
                   <>
-                    <video ref={video} playsInline muted className="h-full w-full object-cover" />
+                    <video ref={video} playsInline muted autoPlay className="h-full w-full object-cover" onLoadedMetadata={e => { const v = e.currentTarget; if (v.videoWidth) setAr(v.videoWidth / v.videoHeight); }} />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-vinho-950/90 via-vinho-950/60 to-transparent p-4 pt-12 text-white">
                       <div className="flex items-baseline gap-3"><span className="num text-[26px] font-bold">{hora}</span><span className="text-[12px] capitalize text-white/80">{diaSemanaExtenso(relogio)}, {brData(hoje.d)}</span></div>
                       <div className="mt-1 text-[12px] font-semibold">Observador: {colab.n} · {colab.c}</div>

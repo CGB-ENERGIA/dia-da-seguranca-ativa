@@ -45,7 +45,7 @@ export function Select({ rotulo, valor, onChange, opcoes, className, neutro }: {
         value={valor}
         onChange={e => onChange(e.target.value)}
         className={clsx(
-          "w-full h-[52px] appearance-none rounded-2xl border pl-3.5 pr-8 pt-[18px] text-[14px] font-bold outline-none cursor-pointer transition",
+          "w-full h-[52px] appearance-none rounded-2xl border pl-3.5 pr-8 pt-[18px] text-[16px] font-bold sm:text-[14px] outline-none cursor-pointer transition",
           ativo ? "border-vinho-600/60 bg-soft text-brand" : "border-ink/10 bg-field text-ink",
           "focus:ring-4 focus:ring-vinho-600/15",
         )}

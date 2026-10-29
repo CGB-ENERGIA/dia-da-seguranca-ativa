@@ -188,7 +188,7 @@ export default function Config() {
                       <Td d cls="text-ink/60">{c.f.toLowerCase()}</Td><Td>{c.b}</Td><Td d>{c.g}</Td>
                       <Td>{c.l ? <span className="rounded-full bg-oliva/15 px-2 py-0.5 text-[11px] font-extrabold text-oliva">sim</span> : <span className="text-ink/30">—</span>}</Td>
                       <Td cls="num font-extrabold">{rs.length}</Td><Td d cls="num">{visitas(rs)}</Td>
-                      <Td><button onClick={() => setEdC(c)} className="grid h-8 w-8 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-brand" aria-label="Editar"><Pencil size={15} /></button></Td>
+                      <Td><button onClick={() => setEdC(c)} className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-brand" aria-label="Editar"><Pencil size={15} /></button></Td>
                     </tr>
                   );
                 })}
@@ -214,7 +214,7 @@ export default function Config() {
                     <tr key={e.p} className="border-t border-ink/6 transition hover:bg-soft">
                       <Td cls="font-mono font-bold text-brand">{e.p}</Td><Td>{e.pr}</Td><Td>{e.b}</Td><Td d>{e.g}</Td>
                       <Td cls={clsx("num font-extrabold", !rs.length && "text-vinho-500")}>{visitas(rs)}</Td><Td d cls="num">{rs.length}</Td>
-                      <Td><button onClick={() => setEdE(e)} className="grid h-8 w-8 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-brand" aria-label="Editar"><Pencil size={15} /></button></Td>
+                      <Td><button onClick={() => setEdE(e)} className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-brand" aria-label="Editar"><Pencil size={15} /></button></Td>
                     </tr>
                   );
                 })}

@@ -121,7 +121,7 @@ export default function Shell() {
           <div className="flex items-center gap-2 rounded-xl bg-field py-1.5 pl-1.5 pr-1.5 shadow-sm">
             <div className="grid h-8 w-8 place-items-center rounded-lg bg-vinho-700 text-[12px] font-extrabold text-white">AD</div>
             <span className="hidden max-w-[140px] truncate text-[13px] font-bold sm:block">{adm}</span>
-            <button onClick={sair} title="Sair" className="grid h-8 w-8 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><LogOut size={16} /></button>
+            <button onClick={sair} title="Sair" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><LogOut size={16} /></button>
           </div>
           <button onClick={alternarTela} title={tela ? "Sair da tela cheia" : "Tela cheia"} aria-label="Tela cheia"
             className="grid h-11 w-11 place-items-center rounded-xl bg-field text-brand shadow-sm transition hover:bg-soft">
@@ -129,7 +129,7 @@ export default function Shell() {
           </button>
         </header>
 
-        <main className="rolagem min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-24 sm:px-8 lg:pb-10">
+        <main className="rolagem min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-8 lg:pb-10">
           <AnimatePresence mode="wait">
             <motion.div key={loc.pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
               <Outlet />
@@ -137,7 +137,7 @@ export default function Shell() {
           </AnimatePresence>
         </main>
 
-        <nav className="fixed inset-x-3 bottom-3 z-30 flex h-16 items-center justify-around rounded-3xl bg-vinho-950 px-2 text-white shadow-2xl lg:hidden">
+        <nav className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 flex h-16 items-center justify-around rounded-3xl bg-vinho-950 px-2 text-white shadow-2xl lg:hidden">
           {ITENS.map(it => (
             <NavLink key={it.to} to={it.to} end={it.fim} className={({ isActive }) => clsx("grid h-12 w-16 place-items-center rounded-2xl", isActive ? "bg-white/15" : "text-white/55")}>
               <it.icone size={21} />

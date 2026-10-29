@@ -91,7 +91,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
   return (
     <div className="grid min-h-full bg-canvas lg:grid-cols-[1.18fr_1fr]">
       {/* ——— palco ——— */}
-      <section className="relative isolate flex min-h-[46vh] flex-col justify-between overflow-hidden bg-vinho-900 px-7 py-8 text-white sm:px-12 sm:py-11 lg:min-h-screen">
+      <section className="relative isolate flex min-h-[46dvh] flex-col justify-between overflow-hidden bg-vinho-900 px-7 py-8 text-white sm:px-12 sm:py-11 lg:min-h-dvh">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(120%_90%_at_15%_0%,#7a1a2e_0%,#4a0f1d_55%,#2b0810_100%)]" />
         <div className="absolute inset-0 -z-10"><CampoLosangos /></div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-vinho-950/90 to-transparent" />
