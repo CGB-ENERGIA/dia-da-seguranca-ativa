@@ -6,6 +6,7 @@ import App from "./App";
 
 registerSW({ immediate: true });
 
+window.__dsa_ok = false;
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />

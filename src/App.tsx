@@ -30,6 +30,7 @@ export default function App() {
   const { pronto, erro, mapa, carregar } = useData();
 
   useEffect(() => { void carregar(); iniciarSync(); }, [carregar]);
+  useEffect(() => { if (pronto) (window as unknown as { __dsa_ok: boolean }).__dsa_ok = true; }, [pronto]);
   // nome salvo que não existe mais no cadastro
   useEffect(() => { if (pronto && chapa && !mapa.has(chapa)) sair(); }, [pronto, chapa, mapa, sair]);
 
