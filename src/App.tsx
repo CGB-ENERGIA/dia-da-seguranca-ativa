@@ -20,8 +20,8 @@ function Registrar() {
 }
 
 function Relatorio() {
-  const chapa = useAuth(s => s.chapa);
-  return chapa ? <Shell /> : <Login modo="relatorio" />;
+  const adm = useAuth(s => s.adm);
+  return adm ? <Shell /> : <Login modo="relatorio" />;
 }
 
 export default function App() {

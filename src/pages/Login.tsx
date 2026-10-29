@@ -3,6 +3,7 @@ import { motion, useAnimationControls } from "motion/react";
 import { ArrowRight, CalendarCheck2, WifiOff } from "lucide-react";
 import { CountUp, Logo, TemaToggle } from "../components/ui";
 import BuscaNome from "../components/BuscaNome";
+import { validarAdmin } from "../lib/admin";
 import { useAuth } from "../store/auth";
 import { todosRegistros, useData } from "../store/data";
 import { agora } from "../lib/dates";
@@ -64,6 +65,9 @@ const DIAS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 export default function Login({ modo = "registrar" }: { modo?: "registrar" | "relatorio" }) {
   const entrar = useAuth(s => s.entrar);
+  const entrarAdm = useAuth(s => s.entrarAdm);
+  const [usuario, setUsuario] = useState("");
+  const [senha, setSenha] = useState("");
   const { historico, remotos, locais, colabs, pronto, origem } = useData();
   const total = useMemo(() => todosRegistros({ historico, remotos, locais }).filter(r => r.d.startsWith(String(new Date().getFullYear()))).length, [historico, remotos, locais]);
   const lideres = useMemo(() => colabs.filter(c => c.l === 1 && c.s === "A"), [colabs]);
@@ -72,8 +76,14 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
   const tremer = useAnimationControls();
   const hoje = agora();
 
-  const enviar = (e: FormEvent) => {
+  const enviar = async (e: FormEvent) => {
     e.preventDefault();
+    if (modo === "relatorio") {
+      const u = await validarAdmin(usuario, senha);
+      if (u) entrarAdm(u);
+      else { setErro("Usuário ou senha incorretos."); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); }
+      return;
+    }
     if (!sel) { setErro("Escolha seu nome na lista."); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); return; }
     entrar(sel.c);
   };
@@ -134,20 +144,34 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
           <Logo className="mb-10 h-14 w-auto dark:hidden" />
           <Logo branco className="mb-10 hidden h-14 w-auto dark:block" />
           <div className="eyebrow mb-2">{modo === "relatorio" ? "Acesso ao relatório" : "Acesso do observador"}</div>
-          <h2 className="display text-[34px] leading-[1.08] text-brand">{modo === "relatorio" ? "Quem vai acompanhar os números?" : "Quem está em campo hoje?"}</h2>
-          <p className="mt-3 text-[14.5px] font-medium text-ink/55">Digite seu nome e escolha na lista para começar.</p>
+          <h2 className="display text-[34px] leading-[1.08] text-brand">{modo === "relatorio" ? "Acompanhe os números." : "Quem está em campo hoje?"}</h2>
+          <p className="mt-3 text-[14.5px] font-medium text-ink/55">{modo === "relatorio" ? "Entre com seu usuário e senha." : "Digite seu nome e escolha na lista para começar."}</p>
 
           <motion.div animate={tremer} className="mt-8">
-            <BuscaNome opcoes={lideres} sel={sel} onSel={c => { setSel(c); setErro(""); }} aviso="Nome não encontrado. Só lideranças lançam; fale com o SESMT." />
-            {erro && !sel && <div role="alert" className="-mt-9 px-1 text-[13px] font-bold text-vinho-500">{erro}</div>}
+            {modo === "relatorio" ? (
+              <div className="space-y-4">
+                <label className="block"><span className="eyebrow mb-2 block">Usuário</span>
+                  <input className="campo !h-14 !rounded-2xl" autoFocus autoComplete="username" autoCapitalize="none" placeholder="@usuario" value={usuario} onChange={e => { setUsuario(e.target.value); setErro(""); }} />
+                </label>
+                <label className="block"><span className="eyebrow mb-2 block">Senha</span>
+                  <input className="campo !h-14 !rounded-2xl" type="password" autoComplete="current-password" placeholder="••••••" value={senha} onChange={e => { setSenha(e.target.value); setErro(""); }} />
+                </label>
+                <div className="min-h-[24px]">{erro && <div role="alert" className="px-1 text-[13px] font-bold text-vinho-500">{erro}</div>}</div>
+              </div>
+            ) : (
+              <>
+                <BuscaNome opcoes={lideres} sel={sel} onSel={c => { setSel(c); setErro(""); }} aviso="Nome não encontrado. Só lideranças lançam; fale com o SESMT." />
+                {erro && !sel && <div role="alert" className="-mt-9 px-1 text-[13px] font-bold text-vinho-500">{erro}</div>}
+              </>
+            )}
           </motion.div>
 
-          <button className="btn btn-vinho group mt-3 !h-14 w-full text-[15.5px]" disabled={!pronto}>
+          <button className="btn btn-vinho group mt-3 !h-14 w-full text-[15.5px]" disabled={!pronto || (modo === "relatorio" && (!usuario || !senha))}>
             {pronto ? (modo === "relatorio" ? "Abrir relatório" : "Entrar") : "Carregando…"}
             <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
           </button>
 
-          <div className="mt-8 flex items-center gap-2.5 rounded-2xl border border-ink/10 bg-card/60 px-4 py-3 text-[12.5px] font-semibold text-ink/55">
+          <div className={"mt-8 items-center gap-2.5 rounded-2xl border border-ink/10 bg-card/60 px-4 py-3 text-[12.5px] font-semibold text-ink/55 " + (modo === "relatorio" ? "hidden" : "flex")}>
             <CalendarCheck2 size={17} className="shrink-0 text-vinho-500" />
             {hoje.weekday === 3 ? "Hoje é quarta-feira: lançamentos liberados." : "Lançamentos são liberados às quartas-feiras."}
           </div>

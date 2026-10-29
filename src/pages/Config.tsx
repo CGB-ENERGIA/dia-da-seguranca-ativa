@@ -17,7 +17,6 @@ import type { Colab, Equipe } from "../lib/types";
 type Aba = "meta" | "colabs" | "equipes" | "obs" | "sistema";
 const ABAS: [Aba, string][] = [["meta", "Meta"], ["colabs", "Colaboradores"], ["equipes", "Equipes"], ["obs", "Observadores"], ["sistema", "Sistema"]];
 
-const ler = () => { try { return sessionStorage.getItem("dsa:gestor") === "1"; } catch { return false; } };
 
 function Campo({ rot, v, on, tipo = "text", opcoes, desab }: { rot: string; v: string; on: (v: string) => void; tipo?: string; opcoes?: string[]; desab?: boolean }) {
   return (
@@ -53,7 +52,7 @@ function Gaveta({ titulo, aberto, onFechar, children }: { titulo: string; aberto
 }
 
 export default function Config() {
-  const [gestor, setGestor] = useState(ler);
+  const [gestor, setGestor] = useState(true);
   const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, origem, historico } = useData();
   const { linhas } = useDados();
   const { pendentes, online, sincronizando } = useSync();

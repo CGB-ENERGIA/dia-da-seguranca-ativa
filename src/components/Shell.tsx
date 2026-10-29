@@ -6,7 +6,6 @@ import { ChevronsLeft, LayoutDashboard, Maximize, Menu, Minimize, Settings2, Use
 import { Logo, TemaToggle } from "./ui";
 import { LogOut } from "lucide-react";
 import { useAuth } from "../store/auth";
-import { useData } from "../store/data";
 
 const ITENS = [
   { to: "/relatorio", rot: "Painel de Ações", icone: LayoutDashboard, fim: true },
@@ -29,8 +28,7 @@ export default function Shell() {
   const [gaveta, setGaveta] = useState(false);
   const [tela, setTela] = useState(false);
   const loc = useLocation();
-  const { chapa, sair } = useAuth();
-  const colab = useData(d => (chapa ? d.mapa.get(chapa) : undefined));
+  const { adm, sairAdm: sair } = useAuth();
 
   useEffect(() => { guardar("dsa:menu", recolhido ? "1" : "0"); }, [recolhido]);
   useEffect(() => { setGaveta(false); document.querySelector("main")?.scrollTo(0, 0); }, [loc.pathname]);
@@ -121,8 +119,8 @@ export default function Shell() {
           </div>
           <TemaToggle />
           <div className="flex items-center gap-2 rounded-xl bg-field py-1.5 pl-1.5 pr-1.5 shadow-sm">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-vinho-700 text-[12px] font-extrabold text-white">{colab?.nome.slice(0, 2) ?? "··"}</div>
-            <span className="hidden max-w-[140px] truncate text-[13px] font-bold sm:block">{colab?.n}</span>
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-vinho-700 text-[12px] font-extrabold text-white">AD</div>
+            <span className="hidden max-w-[140px] truncate text-[13px] font-bold sm:block">{adm}</span>
             <button onClick={sair} title="Sair" className="grid h-8 w-8 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><LogOut size={16} /></button>
           </div>
           <button onClick={alternarTela} title={tela ? "Sair da tela cheia" : "Tela cheia"} aria-label="Tela cheia"
