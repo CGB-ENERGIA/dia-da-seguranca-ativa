@@ -78,6 +78,26 @@ export default function Painel() {
   }, [filtradas, porBase]);
 
   const nQuartas = quartasDoFiltro(f).length;
+  const rotulosLinha = evolucao.length <= 16; // com muitas quartas os números se sobrepõem
+
+  /** Rosca: quantidade dentro da fatia; nome e % fora, com linha de chamada. */
+  const rotuloRosca = (q: any) => {
+    const R = Math.PI / 180, c = Math.cos(-q.midAngle * R), s = Math.sin(-q.midAngle * R);
+    const rm = (q.innerRadius + q.outerRadius) / 2;
+    const x1 = q.cx + (q.outerRadius + 3) * c, y1 = q.cy + (q.outerRadius + 3) * s;
+    const x2 = q.cx + (q.outerRadius + 16) * c, y2 = q.cy + (q.outerRadius + 16) * s;
+    const dir = c >= 0, tx = x2 + (dir ? 5 : -5);
+    const idx = porGer.findIndex(g => g.nome === q.name);
+    const claro = escuro && idx !== 4 && idx !== 5 ? "#2b0810" : idx === 4 ? "#2b0810" : "#fff";
+    return (
+      <g>
+        {q.percent > 0.035 && <text x={q.cx + rm * c} y={q.cy + rm * s} textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={800} fill={claro}>{q.value}</text>}
+        <path d={`M${x1},${y1}L${x2},${y2}`} stroke={tick} fill="none" strokeWidth={1} />
+        <text x={tx} y={y2 - 2} textAnchor={dir ? "start" : "end"} fontSize={12} fontWeight={800} fill={escuro ? "#f5ecee" : "#231619"}>{q.name}</text>
+        <text x={tx} y={y2 + 12} textAnchor={dir ? "start" : "end"} fontSize={11} fontWeight={700} fill={tick}>{Math.round(q.percent * 100)}%</text>
+      </g>
+    );
+  };
 
   return (
     <>
@@ -121,17 +141,17 @@ export default function Painel() {
       </motion.section>
 
       {/* tipos de ação */}
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="rolagem -mx-1 mt-5 flex gap-3 overflow-x-auto px-1 pb-1 lg:grid lg:overflow-visible" style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}>
         {tiles.map((i, k) => {
           const Icone = ICONES[i], n = porAcao.get(i) ?? 0, on = f.acao === i;
           return (
             <motion.button key={i} onClick={() => set({ acao: on ? -1 : i })} aria-pressed={on}
               initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 + k * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className={clsx("group relative overflow-hidden rounded-[22px] border p-4 text-left transition-all hover:-translate-y-0.5 active:scale-[.98]",
+              className={clsx("group relative w-[150px] shrink-0 overflow-hidden rounded-[22px] border p-4 text-left transition-all hover:-translate-y-0.5 active:scale-[.98] lg:w-auto",
                 on ? "border-vinho-700 bg-vinho-700 text-white shadow-[0_18px_34px_-16px_rgba(112,22,39,.9)]" : "border-ink/7 bg-card hover:border-vinho-300 hover:shadow-lg")}>
               <Icone size={19} className={on ? "text-ambar" : "text-vinho-500"} />
-              <div className="display num mt-3 text-[46px] leading-none"><CountUp valor={n} /></div>
-              <div className={clsx("mt-1.5 text-[11.5px] font-extrabold uppercase leading-tight tracking-[0.07em]", on ? "text-white/80" : "text-ink/50")}>{ACAO_CURTA[i]}</div>
+              <div className="display num mt-3 text-[38px] leading-none xl:text-[44px]"><CountUp valor={n} /></div>
+              <div className={clsx("mt-1.5 text-[11px] font-extrabold uppercase leading-tight tracking-[0.06em]", on ? "text-white/80" : "text-ink/50")}>{ACAO_CURTA[i]}</div>
               <span className={clsx("absolute inset-x-0 bottom-0 h-1 origin-left transition-transform", on ? "bg-ambar" : "bg-vinho-600/70")}
                 style={{ transform: `scaleX(${semAcao.length ? n / semAcao.length : 0})` }} />
             </motion.button>
@@ -152,8 +172,8 @@ export default function Painel() {
                   <XAxis dataKey="dia" tick={{ fontSize: 11, fontWeight: 700, fill: tick }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={18} />
                   <YAxis tick={{ fontSize: 11, fontWeight: 700, fill: tick }} axisLine={false} tickLine={false} />
                   <Tooltip content={<Dica />} cursor={{ stroke: cor, strokeDasharray: "4 4" }} />
-                  <Area type="monotone" dataKey="Ações" stroke={cor} strokeWidth={2.8} fill="url(#gA)" animationDuration={900} dot={{ r: 3, fill: cor, strokeWidth: 0 }} activeDot={{ r: 6, fill: "#f2b134", stroke: cor, strokeWidth: 2 }} />
-                  <Area type="monotone" dataKey="Visitas" stroke="#f2b134" strokeWidth={2.4} fill="none" animationDuration={1100} dot={false} />
+                  <Area type="monotone" dataKey="Ações" stroke={cor} strokeWidth={2.8} fill="url(#gA)" animationDuration={900} label={rotulosLinha ? { position: "top", fontSize: 11, fontWeight: 800, fill: tick } : false} dot={{ r: 3, fill: cor, strokeWidth: 0 }} activeDot={{ r: 6, fill: "#f2b134", stroke: cor, strokeWidth: 2 }} />
+                  <Area type="monotone" dataKey="Visitas" stroke="#f2b134" strokeWidth={2.4} fill="none" animationDuration={1100} dot={false} label={rotulosLinha ? { position: "bottom", fontSize: 11, fontWeight: 800, fill: "#f2b134" } : false} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : <Vazio />}
@@ -167,10 +187,10 @@ export default function Painel() {
         <Card titulo="por Gerência" sub="clique para filtrar">
           {porGer.length ? (
             <div className="grid items-center gap-4 sm:grid-cols-[1fr_1fr] xl:grid-cols-1">
-              <div className="relative mx-auto h-[210px] w-[210px]">
+              <div className="relative mx-auto h-[300px] w-full max-w-[420px]">
                 <ResponsiveContainer>
-                  <PieChart>
-                    <Pie data={porGer} dataKey="valor" nameKey="nome" innerRadius={66} outerRadius={100} paddingAngle={2.5} cornerRadius={7} stroke="none" animationDuration={900}
+                  <PieChart margin={{ top: 28, right: 84, bottom: 28, left: 84 }}>
+                    <Pie data={porGer} dataKey="valor" nameKey="nome" innerRadius={58} outerRadius={92} paddingAngle={2} cornerRadius={6} stroke="none" animationDuration={900} label={rotuloRosca} labelLine={false}
                       onClick={(d: any) => set({ gerencia: f.gerencia === d.nome ? "" : d.nome })}>
                       {porGer.map((g, i) => <Cell key={g.nome} fill={paleta[i % paleta.length]} opacity={!f.gerencia || f.gerencia === g.nome ? 1 : 0.25} style={{ cursor: "pointer", outline: "none" }} />)}
                     </Pie>

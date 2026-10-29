@@ -88,7 +88,7 @@ export const useData = create<DataState>((set, get) => {
           tol(buscar<[string, number, string, number][]>("registros.json"), []),
           buscar<{ origem: string }>("meta.json").catch(() => ({ origem: "" })),
         ]);
-        const historico: Reg[] = linhas.map((x, i) => ({
+        const historico: Reg[] = (remotoAtivo ? [] : linhas).map((x, i) => ({
           id: `h${i}`, d: x[0].slice(0, 10), t: x[0].slice(11, 16), chapa: x[1], equipe: x[2], acao: x[3], origem: "hist",
         }));
         let ed = { ...vazio(), ...((await kvGet<Edicoes>("edicoes")) ?? {}) };
