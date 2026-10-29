@@ -29,13 +29,15 @@ interface DataState {
   locais: Reg[];
   carregar: () => Promise<void>;
   recarregarLocais: () => Promise<void>;
-  atualizarRemoto: () => Promise<void>;
+  atualizarRemoto: (forcar?: boolean) => Promise<void>;
   salvarColab: (c: Colab) => Promise<void>;
   salvarEquipe: (e: Equipe) => Promise<void>;
   setMeta: (n: number) => Promise<void>;
   setMetaColab: (chapa: number, n: number | null) => Promise<void>;
 }
 
+let baixando = false;
+let ultimoRemoto = 0;
 const base = import.meta.env.BASE_URL;
 const buscar = async <T,>(arq: string): Promise<T> => {
   try {
@@ -117,13 +119,16 @@ export const useData = create<DataState>((set, get) => {
       }
     },
     async recarregarLocais() { set({ locais: await regsLocais() }); },
-    async atualizarRemoto() {
-      if (!remotoAtivo || !navigator.onLine) return;
+    async atualizarRemoto(forcar = false) {
+      if (!remotoAtivo || !navigator.onLine || baixando) return;
+      if (!forcar && Date.now() - ultimoRemoto < 300000) return; // no máx. a cada 5 min, salvo após enviar lançamentos
+      baixando = true;
       try {
+        ultimoRemoto = Date.now();
         const r = await baixarRegs();
         await kvSet("remotos", r);
         set({ remotos: r });
-      } catch { /* mantém cache */ }
+      } catch { /* mantém cache */ } finally { baixando = false; }
     },
     salvarColab: c => persistir({ ...get().edicoes, colabs: { ...get().edicoes.colabs, [c.c]: c } }),
     salvarEquipe: e => persistir({ ...get().edicoes, equipes: { ...get().edicoes.equipes, [e.p]: e } }),

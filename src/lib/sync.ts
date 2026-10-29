@@ -19,7 +19,8 @@ export async function sincronizar() {
   try {
     if (remotoAtivo && navigator.onLine) {
       useSync.setState({ sincronizando: true });
-      for (const r of (await regsLocais()).filter(x => x.sync !== "synced")) {
+      const fila = (await regsLocais()).filter(x => x.sync !== "synced");
+      for (const r of fila) {
         try {
           const f = r.fotoId ? await lerFoto(r.fotoId) : undefined;
           await enviarReg(r, f?.blob);
@@ -29,7 +30,7 @@ export async function sincronizar() {
         }
       }
       await useData.getState().recarregarLocais();
-      void useData.getState().atualizarRemoto();
+      void useData.getState().atualizarRemoto(fila.length > 0); // só rebaixa o histórico se algo foi enviado
     }
   } finally {
     rodando = false;
