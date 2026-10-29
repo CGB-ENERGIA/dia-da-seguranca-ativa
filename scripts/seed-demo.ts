@@ -35,7 +35,7 @@ for (let i = 0; i < 72; i++) {
   colabs.push({
     c: 90000 + i * 7 + 3, n: `${nome} ${sob[0]}.`, nome: `${nome} ${sob} (demo)`,
     f: gr === "SUPERVISORES" ? "SUPERVISOR OPERACIONAL" : gr === "SEGURANÇA" ? "TÉCNICO SEG DO TRABALHO" : "FISCAL OPERACIONAL",
-    p, b: wpick(BASES), g, gr, s: i % 17 === 0 ? "D" : "A", ger: pick(GERENTES),
+    p, b: wpick(BASES), g, gr, s: i % 17 === 0 ? "D" : "A", ger: pick(GERENTES), l: gr === "FISCAIS" ? 0 : 1,
   });
 }
 

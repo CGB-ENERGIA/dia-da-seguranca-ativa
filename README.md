@@ -4,6 +4,7 @@ PWA (React 19 + Bun + Vite + Tailwind 4) para registrar as ações do Dia da Seg
 (Blitz, DDS/DSS, Inspeção de Ferramentas, Inspeção EPI/EPC, Inspeção Veicular e Treinamento) e acompanhar tudo num painel.
 
 ## Regras de negócio
+- Login por nome (autocomplete); só lideranças (Supervisor, Coordenador, Engenheiro e Técnico de Segurança, Téc. de Planejamento) entram, lançam e aparecem na meta.
 - Lançamentos **só às quartas-feiras** (fuso America/Fortaleza). Grupo SEGURANÇA pode liberar exceções em *Ajustes*.
 - **Ação** = 1 registro por tipo marcado. **Visita** = observador × equipe × quarta-feira
   (3 ações na mesma equipe = 1 visita e 3 ações; 3 equipes = 3 visitas).

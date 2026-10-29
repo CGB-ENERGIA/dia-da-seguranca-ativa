@@ -9,6 +9,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const dir = process.argv[2] ?? "C:/Users/Marcus Vinicius/OneDrive - GRUPO CGB/Área de Trabalho/QSMS/DSA";
+const ATUAL = process.argv[3] ?? "C:/Users/Marcus Vinicius/OneDrive - GRUPO CGB/Área de Trabalho/QSMS/Colaboradores/2026/10 - Out.26.xlsx";
 const files = [
   { y: 2024, f: "DIA DSA - 24.xlsx" },
   { y: 2026, f: "DIA DSA - 26.xlsx" },
@@ -50,6 +51,7 @@ for (const { y, f } of files) {
       gr: grupo.get(c) || "",
       s: trim(r["SITUAÇÃO"]).toUpperCase() === "ATIVO" ? "A" : "D",
       ger: trim(r["GERENTE"]),
+      l: 0,
     });
   }
 
@@ -73,6 +75,30 @@ for (const { y, f } of files) {
     registros.push([iso(r["Data"]), Number(r["Chapa"]), trim(r["Equipevisitada"] ?? r["Equipe visitada"]), ai]);
   }
 }
+
+/* ——— cadastro atual (Base): define quem é liderança ——— */
+const LIDER = /SUPERVISOR|COORDENADOR|ENGENHEIRO SEG|T[ÉE]CNICO SEG|T[ÉE]C.? (DE )?PLANEJ|L[ÍI]DER DE PLANEJ/i;
+const grupoDe = (f: string) => (/SEG/i.test(f) ? "SEGURANÇA" : /COORDENADOR/i.test(f) ? "GERENTES" : "SUPERVISORES");
+const curto = (n: string) => { const p = n.split(" ").filter(x => x.length > 2); return p.length > 1 ? `${p[0][0]}${p[0].slice(1).toLowerCase()} ${p[p.length - 1][0]}.` : p[0] ?? n; };
+for (const c of colabs.values()) c.s = "D"; // quem não está no cadastro atual fica inativo
+const wbA = XLSX.readFile(ATUAL);
+let lideres = 0;
+for (const r of sheet(wbA, "Base")) {
+  const c = Number(r["CHAPA"]);
+  if (!c) continue;
+  const funcao = trim(r["FUNÇÃO"]);
+  const ativo = ["ATIVO", "FÉRIAS"].includes(trim(r["SITUAÇÃO"]).toUpperCase());
+  const lider = LIDER.test(funcao) && !/ENFERMAGEM|ADMINISTRATIVO/i.test(funcao) ? 1 : 0;
+  const antigo = colabs.get(c);
+  if (!lider && !antigo) continue; // só entram no app: liderança ou quem tem histórico
+  colabs.set(c, {
+    c, n: antigo?.n ?? curto(trim(r["NOME"])), nome: trim(r["NOME"]), f: funcao, p: trim(r["PROCESSO"]),
+    b: trim(r["BASE"]), g: trim(r["GERENCIA"]), gr: lider ? (antigo?.gr && antigo.gr !== "FISCAIS" ? antigo.gr : grupoDe(funcao)) : antigo?.gr ?? "FISCAIS",
+    s: ativo ? "A" : "D", ger: antigo?.ger ?? "", l: lider as 0 | 1,
+  });
+  if (lider && ativo) lideres++;
+}
+console.log(`lideranças ativas: ${lideres}`);
 
 registros.sort((a, b) => a[0].localeCompare(b[0]));
 const out = join(process.cwd(), "public", "seed");

@@ -32,3 +32,17 @@ insert into storage.buckets (id, name, public) values ('evidencias', 'evidencias
   on conflict (id) do nothing;
 create policy "enviar fotos" on storage.objects for insert to anon with check (bucket_id = 'evidencias');
 create policy "ler fotos"    on storage.objects for select to anon using (bucket_id = 'evidencias');
+
+-- Cadastro de colaboradores (opcional). Se o seu projeto já tem uma tabela de colaboradores,
+-- ignore este bloco e aponte o app para ela (campos usados: chapa, nome, funcao, base, processo, gerencia, situacao).
+create table if not exists public.colaboradores (
+  chapa    integer primary key,
+  nome     text not null,
+  funcao   text,
+  base     text,
+  processo text,
+  gerencia text,
+  situacao text
+);
+alter table public.colaboradores enable row level security;
+create policy "ler colaboradores" on public.colaboradores for select to anon using (true);

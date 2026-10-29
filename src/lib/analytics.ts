@@ -79,7 +79,7 @@ export function porColaborador(l: Linha[], colabs: Colab[], f: Filtros) {
   const visivel = (c: Colab) =>
     (!f.base || c.b === f.base) && (!f.gerencia || c.g === f.gerencia) && (!f.grupo || c.gr === f.grupo) && (!f.processo || c.p === f.processo);
   return colabs
-    .filter(c => (c.s === "A" || por.has(c.c)) && visivel(c))
+    .filter(c => c.l === 1 && (c.s === "A" || por.has(c.c)) && visivel(c))
     .map(c => {
       const rs = por.get(c.c) ?? [];
       const dias = new Set(rs.map(r => r.q)).size;

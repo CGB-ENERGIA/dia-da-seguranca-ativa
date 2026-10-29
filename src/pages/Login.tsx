@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { motion, useAnimationControls } from "motion/react";
 import { ArrowRight, CalendarCheck2, WifiOff } from "lucide-react";
 import { CountUp, Logo } from "../components/ui";
 import { useAuth } from "../store/auth";
 import { todosRegistros, useData } from "../store/data";
 import { agora } from "../lib/dates";
+import type { Colab } from "../lib/types";
+
+const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
 /** Campo de losangos (motivo do logo) que acende com o cursor e respira em ondas. */
 function CampoLosangos() {
@@ -67,18 +70,35 @@ export default function Login() {
   const origem = useData(s => s.origem);
   const { historico, remotos, locais } = useData();
   const total = useMemo(() => todosRegistros({ historico, remotos, locais }).filter(r => r.d.startsWith(String(new Date().getFullYear()))).length, [historico, remotos, locais]);
-  const [valor, setValor] = useState("");
+  const [texto, setTexto] = useState("");
+  const [sel, setSel] = useState<Colab | null>(null);
+  const [aberto, setAberto] = useState(false);
+  const [hi, setHi] = useState(0);
   const [erro, setErro] = useState("");
   const tremer = useAnimationControls();
   const hoje = agora();
 
-  const colab = useMemo(() => (valor ? mapa.get(Number(valor)) : undefined), [valor, mapa]);
+  const lideres = useMemo(() => [...mapa.values()].filter(c => c.l === 1 && c.s === "A"), [mapa]);
+  const sugestoes = useMemo(() => {
+    const q = norm(texto).split(" ").filter(Boolean);
+    if (!q.length) return [];
+    return lideres.filter(c => { const n = norm(c.nome); return q.every(p => n.includes(p)); })
+      .sort((x, y) => norm(x.nome).indexOf(q[0]) - norm(y.nome).indexOf(q[0]) || x.nome.localeCompare(y.nome)).slice(0, 7);
+  }, [texto, lideres]);
 
+  const escolher = (c: Colab) => { setSel(c); setTexto(c.nome); setAberto(false); setErro(""); };
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
-    if (!colab) { setErro(valor ? "Matrícula não encontrada." : "Digite sua matrícula."); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); return; }
-    if (colab.s === "D") { setErro("Cadastro desligado. Fale com o SESMT."); return; }
-    entrar(colab.c);
+    const c = sel ?? (sugestoes.length === 1 ? sugestoes[0] : null);
+    if (!c) { setErro(texto ? "Escolha seu nome na lista." : "Digite seu nome."); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); return; }
+    entrar(c.c);
+  };
+  const teclas = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (!aberto || !sugestoes.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setHi(h => (h + 1) % sugestoes.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setHi(h => (h - 1 + sugestoes.length) % sugestoes.length); }
+    else if (e.key === "Enter") { e.preventDefault(); escolher(sugestoes[hi] ?? sugestoes[0]); }
+    else if (e.key === "Escape") setAberto(false);
   };
 
   return (
@@ -148,23 +168,43 @@ export default function Login() {
           <Logo className="mb-10 h-14 w-auto" />
           <div className="eyebrow mb-2">Acesso do observador</div>
           <h2 className="display text-[40px] leading-[1.02] text-vinho-900">Quem está em campo hoje?</h2>
-          <p className="mt-3 text-[14.5px] font-medium text-black/55">Digite sua matrícula (chapa) para começar.</p>
+          <p className="mt-3 text-[14.5px] font-medium text-black/55">Digite seu nome e escolha na lista para começar.</p>
 
           <motion.div animate={tremer} className="mt-8">
-            <label htmlFor="chapa" className="eyebrow mb-2 block">Matrícula</label>
-            <input id="chapa" inputMode="numeric" autoComplete="off" autoFocus placeholder="00000"
-              value={valor} onChange={e => { setValor(e.target.value.replace(/\D/g, "").slice(0, 7)); setErro(""); }}
-              className="campo !h-16 !rounded-2xl text-center font-mono text-[26px] tracking-[0.3em]" />
+            <label htmlFor="nome" className="eyebrow mb-2 block">Seu nome</label>
+            <div className="relative">
+              <input id="nome" autoComplete="off" autoFocus placeholder="Comece a digitar…" role="combobox" aria-expanded={aberto} aria-controls="lista-nomes"
+                value={texto} onChange={e => { setTexto(e.target.value); setSel(null); setAberto(true); setHi(0); setErro(""); }}
+                onFocus={() => setAberto(true)} onBlur={() => setTimeout(() => setAberto(false), 120)} onKeyDown={teclas}
+                className="campo !h-16 !rounded-2xl !text-[17px]" />
+              {aberto && sugestoes.length > 0 && !sel && (
+                <ul id="lista-nomes" role="listbox" className="absolute inset-x-0 top-[68px] z-10 overflow-hidden rounded-2xl border border-black/10 bg-white p-1.5 shadow-[0_24px_48px_-16px_rgba(74,15,29,.45)]">
+                  {sugestoes.map((c, i) => (
+                    <li key={c.c} role="option" aria-selected={i === hi}>
+                      <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => escolher(c)} onMouseEnter={() => setHi(i)}
+                        className={"flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition " + (i === hi ? "bg-vinho-50" : "")}>
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-vinho-700 text-[12px] font-extrabold text-white">{c.nome.slice(0, 2)}</span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-[14px] font-bold text-vinho-900">{c.nome}</span>
+                          <span className="block truncate text-[11.5px] font-medium text-black/45">{c.f.toLowerCase()} · {c.b}</span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="mt-3 min-h-[44px]">
-              {colab ? (
-                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 rounded-2xl bg-vinho-50 px-4 py-2.5">
-                  <div className="grid h-8 w-8 place-items-center rounded-full bg-vinho-700 text-[12px] font-extrabold text-white">{colab.n.slice(0, 2).toUpperCase()}</div>
+              {sel ? (
+                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 rounded-2xl bg-vinho-50 px-4 py-2.5">
+                  <div className="grid h-8 w-8 place-items-center rounded-full bg-vinho-700 text-[12px] font-extrabold text-white">{sel.nome.slice(0, 2)}</div>
                   <div className="leading-tight">
-                    <div className="text-[14px] font-bold text-vinho-900">Olá, {colab.n}</div>
-                    <div className="text-[11.5px] font-medium text-black/50">{colab.f.toLowerCase()} · {colab.b}</div>
+                    <div className="text-[14px] font-bold text-vinho-900">Olá, {sel.nome.split(" ")[0][0] + sel.nome.split(" ")[0].slice(1).toLowerCase()}</div>
+                    <div className="text-[11.5px] font-medium text-black/50">{sel.f.toLowerCase()} · {sel.b}</div>
                   </div>
                 </motion.div>
+              ) : texto && !sugestoes.length ? (
+                <div className="px-1 text-[13px] font-bold text-vinho-600">Nome não encontrado. Só lideranças lançam; fale com o SESMT.</div>
               ) : erro ? (
                 <div role="alert" className="px-1 text-[13px] font-bold text-vinho-600">{erro}</div>
               ) : null}
@@ -182,7 +222,7 @@ export default function Login() {
           </div>
           {origem === "demo" && (
             <p className="mt-4 text-center text-[11.5px] font-semibold text-black/40">
-              Versão de demonstração · dados fictícios · experimente a matrícula 90010
+              Versão de demonstração · dados fictícios · experimente digitar "Murilo"
             </p>
           )}
         </motion.form>

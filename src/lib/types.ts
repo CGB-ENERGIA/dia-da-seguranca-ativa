@@ -9,6 +9,7 @@ export interface Colab {
   gr: string; // grupo
   s: "A" | "D"; // ativo | desligado
   ger: string;
+  l: 0 | 1; // liderança: aparece na meta e pode lançar
 }
 export interface Equipe {
   p: string; // prefixo
