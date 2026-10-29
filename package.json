@@ -1,0 +1,45 @@
+{
+  "name": "dia-da-seguranca-ativa",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "seed:demo": "bun scripts/seed-demo.ts",
+    "seed:real": "bun scripts/import-real.ts",
+    "deploy": "bun run seed:demo && cross-env BASE_PATH=/dia-da-seguranca-ativa/ bun run build && gh-pages -d dist"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "idb": "^8.0.4",
+    "lucide-react": "^1.64.0",
+    "motion": "^14.7.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5",
+    "recharts": "^3.10.1",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "cross-env": "^10.1.0",
+    "gh-pages": "^6.3.0",
+    "oxlint": "^1.89.0",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5",
+    "vite-plugin-pwa": "^2.0.0",
+    "xlsx": "^0.18.5"
+  }
+}
