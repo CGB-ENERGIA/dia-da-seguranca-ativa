@@ -62,7 +62,7 @@ function CampoLosangos() {
 
 const DIAS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
-export default function Login() {
+export default function Login({ modo = "registrar" }: { modo?: "registrar" | "relatorio" }) {
   const entrar = useAuth(s => s.entrar);
   const { historico, remotos, locais, colabs, pronto, origem } = useData();
   const total = useMemo(() => todosRegistros({ historico, remotos, locais }).filter(r => r.d.startsWith(String(new Date().getFullYear()))).length, [historico, remotos, locais]);
@@ -133,8 +133,8 @@ export default function Login() {
         <motion.form onSubmit={enviar} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[400px]">
           <Logo className="mb-10 h-14 w-auto dark:hidden" />
           <Logo branco className="mb-10 hidden h-14 w-auto dark:block" />
-          <div className="eyebrow mb-2">Acesso do observador</div>
-          <h2 className="display text-[34px] leading-[1.08] text-brand">Quem está em campo hoje?</h2>
+          <div className="eyebrow mb-2">{modo === "relatorio" ? "Acesso ao relatório" : "Acesso do observador"}</div>
+          <h2 className="display text-[34px] leading-[1.08] text-brand">{modo === "relatorio" ? "Quem vai acompanhar os números?" : "Quem está em campo hoje?"}</h2>
           <p className="mt-3 text-[14.5px] font-medium text-ink/55">Digite seu nome e escolha na lista para começar.</p>
 
           <motion.div animate={tremer} className="mt-8">
@@ -143,7 +143,7 @@ export default function Login() {
           </motion.div>
 
           <button className="btn btn-vinho group mt-3 !h-14 w-full text-[15.5px]" disabled={!pronto}>
-            {pronto ? "Entrar" : "Carregando…"}
+            {pronto ? (modo === "relatorio" ? "Abrir relatório" : "Entrar") : "Carregando…"}
             <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
           </button>
 

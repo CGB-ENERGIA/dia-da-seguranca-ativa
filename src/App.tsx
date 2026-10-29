@@ -19,6 +19,11 @@ function Registrar() {
   return chapa ? <RegistrarShell /> : <Login />;
 }
 
+function Relatorio() {
+  const chapa = useAuth(s => s.chapa);
+  return chapa ? <Shell /> : <Login modo="relatorio" />;
+}
+
 export default function App() {
   const chapa = useAuth(s => s.chapa);
   const sair = useAuth(s => s.sair);
@@ -39,7 +44,7 @@ export default function App() {
           <Route index element={<Lancar />} />
           <Route path="meus" element={<Meus />} />
         </Route>
-        <Route path="relatorio" element={<Shell />}>
+        <Route path="relatorio" element={<Relatorio />}>
           <Route index element={<Painel />} />
           <Route path="colaboradores" element={<Colaboradores />} />
           <Route path="equipes" element={<Equipes />} />
