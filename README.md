@@ -1,5 +1,7 @@
 # Dia da Segurança Ativa · CGB Energia
 
+**Desenvolvedor:** Marcus Vinicius Silva Queiros
+
 PWA (React 19 + Bun + Vite + Tailwind 4) para registrar as ações do Dia da Segurança Ativa
 (Blitz, DDS/DSS, Inspeção de Ferramentas, Inspeção EPI/EPC, Inspeção Veicular e Treinamento) e acompanhar tudo num painel.
 

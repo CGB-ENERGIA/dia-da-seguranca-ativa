@@ -134,6 +134,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
             <div className="eyebrow !text-white/50">ações registradas em {new Date().getFullYear()}</div>
           </div>
           <div className="flex items-center gap-2 pb-1 text-[12.5px] font-semibold text-white/55"><WifiOff size={15} /> Funciona sem sinal · envia quando a rede voltar</div>
+          <div className="w-full pt-1 text-[11.5px] font-semibold text-white/40">Desenvolvido por Marcus Vinicius Silva Queiros</div>
         </motion.div>
       </section>
 

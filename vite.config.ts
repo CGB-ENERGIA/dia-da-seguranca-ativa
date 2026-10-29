@@ -18,7 +18,7 @@ export default defineConfig({
       manifest: {
         name: "Dia da Segurança Ativa · CGB Energia",
         short_name: "DSA CGB",
-        description: "Registro de ações do Dia da Segurança Ativa, mesmo sem sinal.",
+        description: "Registro de ações do Dia da Segurança Ativa, mesmo sem sinal. Desenvolvido por Marcus Vinicius Silva Queiros.",
         lang: "pt-BR",
         theme_color: "#4a0f1d",
         background_color: "#4a0f1d",

@@ -134,6 +134,7 @@ export default function Config() {
 
       {/* abas */}
       <div className="flex flex-wrap items-center gap-3">
+        <Select neutro rotulo="Ano" valor={ano} onChange={v => setAno(+v)} opcoes={anos.map(a => ({ v: a, t: String(a) }))} className="!min-w-[120px]" />
         <div className="flex flex-wrap gap-1 rounded-2xl bg-ink/5 p-1">
           {ABAS.map(([k, r]) => (
             <button key={k} onClick={() => { setAba(k); setQ(""); }} className={clsx("relative rounded-xl px-4 py-2 text-[13px] font-bold transition", aba === k ? "text-brand" : "text-ink/50 hover:text-ink")}>
@@ -142,8 +143,6 @@ export default function Config() {
             </button>
           ))}
         </div>
-        <div className="flex-1" />
-        {(aba === "colabs" || aba === "equipes" || aba === "obs") && <Select neutro rotulo="Quantitativos de" valor={ano} onChange={v => setAno(+v)} opcoes={anos.map(a => ({ v: a, t: String(a) }))} />}
       </div>
 
       {/* META */}
@@ -263,6 +262,12 @@ export default function Config() {
                 </div>
               </div>
             ))}
+          </Card>
+          <Card titulo="Desenvolvedor">
+            <div className="flex items-center gap-4">
+              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-vinho-700 text-[18px] font-extrabold text-white">MQ</div>
+              <div><div className="text-[16px] font-extrabold text-brand">Marcus Vinicius Silva Queiros</div><div className="text-[12.5px] font-medium text-ink/50">Desenvolvimento e manutenção · CGB Energia</div></div>
+            </div>
           </Card>
           <Card titulo="Estado do sistema">
             <ul className="space-y-3.5 text-[13.5px]">

@@ -42,5 +42,6 @@
     "vite": "^8.3.5",
     "vite-plugin-pwa": "^2.0.0",
     "xlsx": "^0.18.5"
-  }
+  },
+  "author": "Marcus Vinicius Silva Queiros"
 }
