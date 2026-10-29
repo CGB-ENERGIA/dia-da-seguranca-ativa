@@ -8,3 +8,4 @@ public/seed/
 .env.*
 !.env.example
 .claude/
+supabase/colaboradores-seed.sql

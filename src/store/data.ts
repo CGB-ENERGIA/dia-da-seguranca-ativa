@@ -87,7 +87,7 @@ export const useData = create<DataState>((set, get) => {
           if (cfg) ed = { ...vazio(), ...cfg };
           if (rem?.length) {
             const antigos = new Map(base.map(c => [c.c, c]));
-            base = rem.map(r => { const a = antigos.get(r.c!); return { gr: "", ger: "", ...a, ...r, l: a?.l ?? (ehLideranca(r.f ?? "") ? 1 : 0) } as Colab; });
+            base = rem.map(r => { const a = antigos.get(r.c!); return { gr: "", ger: "", ...a, ...r, n: r.n ?? a?.n ?? (r.nome ?? "").split(" ")[0], l: r.l ?? a?.l ?? (ehLideranca(r.f ?? "") ? 1 : 0) } as Colab; });
           }
         }
         set({
