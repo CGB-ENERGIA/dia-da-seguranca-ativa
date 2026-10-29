@@ -49,3 +49,36 @@ export async function baixarRegs(): Promise<Reg[]> {
   }
   return out;
 }
+
+/* ——— configuração compartilhada (metas e edições do cadastro) ——— */
+export async function lerConfig<T>(chave: string): Promise<T | null> {
+  const res = await fetch(`${BASE}/rest/v1/config?chave=eq.${encodeURIComponent(chave)}&select=valor`, { headers: H() });
+  if (!res.ok) throw new Error(`config ${res.status}`);
+  const rows = (await res.json()) as { valor: T }[];
+  return rows[0]?.valor ?? null;
+}
+export async function gravarConfig(chave: string, valor: unknown) {
+  const res = await fetch(`${BASE}/rest/v1/config?on_conflict=chave`, {
+    method: "POST",
+    headers: { ...H(), "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ chave, valor }),
+  });
+  if (!res.ok) throw new Error(`config ${res.status}`);
+}
+
+/** Lê a tabela `colaboradores` que já existe no Supabase, aceitando variações comuns de nome de coluna. */
+export async function lerColaboradoresRemotos(): Promise<Partial<import("./types").Colab>[]> {
+  const res = await fetch(`${BASE}/rest/v1/colaboradores?select=*&limit=5000`, { headers: H() });
+  if (!res.ok) throw new Error(`colaboradores ${res.status}`);
+  const rows = (await res.json()) as Record<string, any>[];
+  const pega = (r: Record<string, any>, ...ks: string[]) => { for (const k of ks) if (r[k] != null && r[k] !== "") return String(r[k]); return ""; };
+  return rows.map(r => ({
+    c: Number(pega(r, "chapa", "matricula", "CHAPA")),
+    nome: pega(r, "nome", "NOME"),
+    f: pega(r, "funcao", "função", "FUNÇÃO", "cargo"),
+    b: pega(r, "base", "secao", "seção", "BASE"),
+    p: pega(r, "processo", "PROCESSO"),
+    g: pega(r, "gerencia", "gerência", "GERENCIA"),
+    s: /DESLIG|INATIV/i.test(pega(r, "situacao", "situação", "SITUAÇÃO", "status")) ? "D" : "A",
+  })).filter(c => c.c && c.nome) as Partial<import("./types").Colab>[];
+}

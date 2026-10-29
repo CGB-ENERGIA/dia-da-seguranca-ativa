@@ -18,7 +18,7 @@ export default function Filtros({ semAcao }: { semAcao?: boolean }) {
   const sujo = f.mes || f.semana || f.base || f.gerencia || f.grupo || f.processo || (!semAcao && f.acao >= 0);
 
   return (
-    <div className="rolagem z-20 -mx-4 mb-5 flex flex-nowrap items-end gap-2.5 overflow-x-auto sm:sticky sm:top-0 sm:flex-wrap sm:overflow-visible bg-creme/85 px-4 pb-3 pt-1 backdrop-blur-md sm:-mx-8 sm:px-8">
+    <div className="rolagem z-20 -mx-4 mb-5 flex flex-nowrap items-end gap-2.5 overflow-x-auto sm:sticky sm:top-0 sm:flex-wrap sm:overflow-visible bg-canvas/85 px-4 pb-3 pt-1 backdrop-blur-md sm:-mx-8 sm:px-8">
       <Select neutro rotulo="Ano" valor={f.ano} onChange={v => set({ ano: +v })} opcoes={anos.map(a => ({ v: a, t: String(a) }))} />
       <Select rotulo="Mês" valor={f.mes} onChange={v => set({ mes: +v })}
         opcoes={[{ v: 0, t: "Todos" }, ...MESES_LONGO.map((m, i) => ({ v: i + 1, t: m }))]} />

@@ -31,3 +31,7 @@ bun run dev
 ```bash
 bun run deploy   # gera seed demo, build com base /dia-da-seguranca-ativa/ e publica em gh-pages
 ```
+
+## Dois links
+- `…/#/registrar` — observadores: login por nome, lançar ação com foto, meus lançamentos.
+- `…/#/relatorio` — painel, colaboradores, equipes e **Configurações** (edição de cadastros e da meta; exige nome da equipe de Segurança).

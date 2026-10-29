@@ -19,8 +19,8 @@ function Miniatura({ id }: { id?: string }) {
     return () => { if (u) URL.revokeObjectURL(u); };
   }, [id]);
   return url
-    ? <img src={url} alt="" className="h-16 w-16 rounded-xl object-cover ring-1 ring-black/10" />
-    : <div className="grid h-16 w-16 place-items-center rounded-xl bg-black/5 text-black/25"><ImageOff size={20} /></div>;
+    ? <img src={url} alt="" className="h-16 w-16 rounded-xl object-cover ring-1 ring-ink/10" />
+    : <div className="grid h-16 w-16 place-items-center rounded-xl bg-ink/5 text-ink/25"><ImageOff size={20} /></div>;
 }
 
 export default function Meus() {
@@ -48,26 +48,26 @@ export default function Meus() {
   return (
     <div className="mx-auto max-w-[860px]">
       <Card titulo="Lançamentos feitos neste aparelho" sub={hist ? `+ ${hist} ações do histórico importado` : undefined}
-        direita={<Link to="/lancar" className="btn btn-vinho !h-11 !px-4 text-[13px]"><Plus size={17} /> Novo</Link>}>
+        direita={<Link to="/registrar" className="btn btn-vinho !h-11 !px-4 text-[13px]"><Plus size={17} /> Novo</Link>}>
         {meus.length ? (
-          <ul className="divide-y divide-black/6">
+          <ul className="divide-y divide-ink/6">
             {meus.map(r => (
               <li key={r.id} className="flex items-center gap-4 py-3.5">
                 <Miniatura id={r.fotoId} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[14.5px] font-extrabold text-vinho-900">{ACAO_CURTA[r.acao]}</span>
-                    <span className="font-mono text-[12.5px] font-bold text-black/50">{r.equipe}</span>
+                    <span className="text-[14.5px] font-extrabold text-brand">{ACAO_CURTA[r.acao]}</span>
+                    <span className="font-mono text-[12.5px] font-bold text-ink/50">{r.equipe}</span>
                   </div>
-                  <div className="mt-0.5 truncate text-[12px] font-semibold text-black/45">{brData(r.d)} · {r.t}{r.local ? ` · ${r.local}` : ""}</div>
+                  <div className="mt-0.5 truncate text-[12px] font-semibold text-ink/45">{brData(r.d)} · {r.t}{r.local ? ` · ${r.local}` : ""}</div>
                 </div>
                 <span className={clsx("hidden items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-extrabold sm:flex",
-                  r.sync === "synced" ? "bg-oliva/15 text-oliva" : r.sync === "error" ? "bg-vinho-100 text-vinho-700" : "bg-ambar/25 text-[#7a5200]")}>
+                  r.sync === "synced" ? "bg-oliva/15 text-oliva" : r.sync === "error" ? "bg-soft2 text-brand" : "bg-ambar/25 text-[#7a5200]")}>
                   {r.sync === "synced" ? <CheckCircle2 size={13} /> : r.sync === "error" ? <TriangleAlert size={13} /> : <CloudUpload size={13} />}
                   {r.sync === "synced" ? "enviado" : r.sync === "error" ? "falhou, tentando" : "na fila"}
                 </span>
-                {r.fotoId && <button onClick={() => void baixarFoto(r)} title="Baixar foto" className="grid h-10 w-10 place-items-center rounded-xl text-vinho-700 hover:bg-vinho-50"><Download size={18} /></button>}
-                {r.sync !== "synced" && <button onClick={() => void remover(r)} title="Excluir" className="grid h-10 w-10 place-items-center rounded-xl text-black/35 hover:bg-vinho-50 hover:text-vinho-700"><Trash2 size={17} /></button>}
+                {r.fotoId && <button onClick={() => void baixarFoto(r)} title="Baixar foto" className="grid h-10 w-10 place-items-center rounded-xl text-brand hover:bg-soft"><Download size={18} /></button>}
+                {r.sync !== "synced" && <button onClick={() => void remover(r)} title="Excluir" className="grid h-10 w-10 place-items-center rounded-xl text-ink/35 hover:bg-soft hover:text-brand"><Trash2 size={17} /></button>}
               </li>
             ))}
           </ul>

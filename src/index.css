@@ -1,11 +1,13 @@
 @import "tailwindcss";
 @import "@fontsource-variable/manrope";
+@import "@fontsource-variable/sora";
 @import "@fontsource-variable/jetbrains-mono";
-@import "@fontsource/instrument-serif";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Instrument Serif", Georgia, serif;
+  --font-display: "Sora Variable", "Manrope Variable", ui-sans-serif, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
 
   --color-vinho-50: #fbf3f4;
@@ -19,49 +21,68 @@
   --color-vinho-800: #5a1120;
   --color-vinho-900: #4a0f1d;
   --color-vinho-950: #2b0810;
-  --color-creme: #f6f1ea;
-  --color-papel: #fffdfa;
-  --color-tinta: #231619;
-  --color-grafite: #4a4a49;
   --color-ambar: #f2b134;
   --color-oliva: #3f7d5c;
 
+  /* tokens semânticos (claro) — redefinidos em .dark */
+  --color-canvas: #f4f1ee;
+  --color-card: #ffffff;
+  --color-field: #ffffff;
+  --color-ink: #1d1417;
+  --color-brand: #5a1120;
+  --color-soft: #f9eef0;
+  --color-soft2: #f3dde1;
+
   --ease-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root.dark {
+  color-scheme: dark;
+  --color-canvas: #0f0809;
+  --color-card: #1a1013;
+  --color-field: #231519;
+  --color-ink: #f5ecee;
+  --color-brand: #f2b9c4;
+  --color-soft: rgb(205 111 129 / 0.13);
+  --color-soft2: rgb(205 111 129 / 0.24);
 }
 
 html, body, #root { height: 100%; }
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: var(--color-creme);
-  color: var(--color-tinta);
+  background: var(--color-canvas);
+  color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color .3s, color .3s;
 }
 ::selection { background: var(--color-vinho-700); color: #fff; }
 
 .num { font-variant-numeric: tabular-nums; }
-.display { font-family: var(--font-display); letter-spacing: -0.01em; }
+.display { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.035em; }
 
 /* superfícies */
 .card {
-  background: var(--color-papel);
-  border: 1px solid rgb(35 22 25 / 0.07);
-  border-radius: 22px;
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 10px 30px -18px rgb(74 15 29 / 0.28);
+  background: var(--color-card);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 8%, transparent);
+  border-radius: 24px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.03), 0 18px 40px -26px rgb(74 15 29 / 0.35);
 }
+:root.dark .card { box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 18px 40px -26px rgb(0 0 0 / 0.8); }
 .eyebrow {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-  color: rgb(35 22 25 / 0.48);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-ink) 50%, transparent);
 }
 
 /* campos */
 .campo {
   width: 100%; height: 48px; padding: 0 16px; border-radius: 14px;
-  border: 1.5px solid rgb(35 22 25 / 0.12); background: #fff; font: inherit; font-weight: 600;
-  color: var(--color-tinta); outline: none; transition: border-color .2s, box-shadow .2s;
+  border: 1.5px solid color-mix(in srgb, var(--color-ink) 13%, transparent); background: var(--color-field); font: inherit; font-weight: 600;
+  color: var(--color-ink); outline: none; transition: border-color .2s, box-shadow .2s;
 }
-.campo:focus { border-color: var(--color-vinho-600); box-shadow: 0 0 0 4px rgb(156 42 66 / 0.14); }
+.campo::placeholder { color: color-mix(in srgb, var(--color-ink) 35%, transparent); }
+.campo:focus { border-color: var(--color-vinho-500); box-shadow: 0 0 0 4px rgb(156 42 66 / 0.2); }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -71,26 +92,31 @@ body {
 .btn:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-vinho { background: var(--color-vinho-700); color: #fff; box-shadow: 0 10px 24px -10px rgb(112 22 39 / 0.7); }
-.btn-vinho:hover:not(:disabled) { background: var(--color-vinho-800); }
-.btn-claro { background: #fff; color: var(--color-vinho-800); border: 1.5px solid rgb(35 22 25 / 0.12); }
-.btn-claro:hover { background: var(--color-vinho-50); }
+.btn-vinho:hover:not(:disabled) { background: var(--color-vinho-600); }
+.btn-claro { background: var(--color-field); color: var(--color-brand); border: 1.5px solid color-mix(in srgb, var(--color-ink) 13%, transparent); }
+.btn-claro:hover { background: var(--color-soft); }
 
-/* padrão losango (motivo do logo) */
-.losangos {
-  background-image:
-    linear-gradient(45deg, rgb(255 255 255 / 0.04) 25%, transparent 25%, transparent 75%, rgb(255 255 255 / 0.04) 75%),
-    linear-gradient(45deg, rgb(255 255 255 / 0.04) 25%, transparent 25%, transparent 75%, rgb(255 255 255 / 0.04) 75%);
-  background-size: 56px 56px; background-position: 0 0, 28px 28px;
+/* malha de pontos (sem xadrez) */
+.malha {
+  background-image: radial-gradient(rgb(255 255 255 / 0.13) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+}
+/* grão de luz do herói */
+.aurora {
+  background:
+    radial-gradient(60% 90% at 88% 0%, rgb(205 111 129 / 0.55) 0%, transparent 60%),
+    radial-gradient(50% 80% at 0% 100%, rgb(242 177 52 / 0.22) 0%, transparent 60%),
+    linear-gradient(135deg, #5a1120 0%, #2b0810 100%);
 }
 
-/* barras de rolagem discretas */
-.rolagem { scrollbar-width: thin; scrollbar-color: rgb(112 22 39 / 0.35) transparent; }
+.rolagem { scrollbar-width: thin; scrollbar-color: rgb(156 42 66 / 0.4) transparent; }
 .rolagem::-webkit-scrollbar { width: 8px; height: 8px; }
-.rolagem::-webkit-scrollbar-thumb { background: rgb(112 22 39 / 0.3); border-radius: 8px; }
+.rolagem::-webkit-scrollbar-thumb { background: rgb(156 42 66 / 0.35); border-radius: 8px; }
 
 @keyframes pulsa { 0%,100% { opacity: .55; transform: scale(1) } 50% { opacity: 1; transform: scale(1.35) } }
 @keyframes desliza { from { background-position: 0 0 } to { background-position: 200% 0 } }
-.esqueleto { background: linear-gradient(90deg, #0000 0, rgb(112 22 39 / .08) 50%, #0000 100%) 0 0/200% 100%, rgb(112 22 39 / .05); animation: desliza 1.6s linear infinite; border-radius: 12px; }
+.esqueleto { background: linear-gradient(90deg, #0000 0, rgb(156 42 66 / .12) 50%, #0000 100%) 0 0/200% 100%, rgb(156 42 66 / .06); animation: desliza 1.6s linear infinite; border-radius: 12px; }
 
 .recharts-tooltip-wrapper { outline: none; }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

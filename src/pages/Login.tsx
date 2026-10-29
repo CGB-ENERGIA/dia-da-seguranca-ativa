@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion, useAnimationControls } from "motion/react";
 import { ArrowRight, CalendarCheck2, WifiOff } from "lucide-react";
-import { CountUp, Logo } from "../components/ui";
+import { CountUp, Logo, TemaToggle } from "../components/ui";
+import BuscaNome from "../components/BuscaNome";
 import { useAuth } from "../store/auth";
 import { todosRegistros, useData } from "../store/data";
 import { agora } from "../lib/dates";
 import type { Colab } from "../lib/types";
-
-const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
 /** Campo de losangos (motivo do logo) que acende com o cursor e respira em ondas. */
 function CampoLosangos() {
@@ -65,64 +64,37 @@ const DIAS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 export default function Login() {
   const entrar = useAuth(s => s.entrar);
-  const mapa = useData(s => s.mapa);
-  const pronto = useData(s => s.pronto);
-  const origem = useData(s => s.origem);
-  const { historico, remotos, locais } = useData();
+  const { historico, remotos, locais, colabs, pronto, origem } = useData();
   const total = useMemo(() => todosRegistros({ historico, remotos, locais }).filter(r => r.d.startsWith(String(new Date().getFullYear()))).length, [historico, remotos, locais]);
-  const [texto, setTexto] = useState("");
+  const lideres = useMemo(() => colabs.filter(c => c.l === 1 && c.s === "A"), [colabs]);
   const [sel, setSel] = useState<Colab | null>(null);
-  const [aberto, setAberto] = useState(false);
-  const [hi, setHi] = useState(0);
   const [erro, setErro] = useState("");
   const tremer = useAnimationControls();
   const hoje = agora();
 
-  const lideres = useMemo(() => [...mapa.values()].filter(c => c.l === 1 && c.s === "A"), [mapa]);
-  const sugestoes = useMemo(() => {
-    const q = norm(texto).split(" ").filter(Boolean);
-    if (!q.length) return [];
-    return lideres.filter(c => { const n = norm(c.nome); return q.every(p => n.includes(p)); })
-      .sort((x, y) => norm(x.nome).indexOf(q[0]) - norm(y.nome).indexOf(q[0]) || x.nome.localeCompare(y.nome)).slice(0, 7);
-  }, [texto, lideres]);
-
-  const escolher = (c: Colab) => { setSel(c); setTexto(c.nome); setAberto(false); setErro(""); };
-  const enviar = async (e: FormEvent) => {
+  const enviar = (e: FormEvent) => {
     e.preventDefault();
-    const c = sel ?? (sugestoes.length === 1 ? sugestoes[0] : null);
-    if (!c) { setErro(texto ? "Escolha seu nome na lista." : "Digite seu nome."); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); return; }
-    entrar(c.c);
-  };
-  const teclas = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!aberto || !sugestoes.length) return;
-    if (e.key === "ArrowDown") { e.preventDefault(); setHi(h => (h + 1) % sugestoes.length); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setHi(h => (h - 1 + sugestoes.length) % sugestoes.length); }
-    else if (e.key === "Enter") { e.preventDefault(); escolher(sugestoes[hi] ?? sugestoes[0]); }
-    else if (e.key === "Escape") setAberto(false);
+    if (!sel) { setErro("Escolha seu nome na lista."); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); return; }
+    entrar(sel.c);
   };
 
   return (
-    <div className="grid min-h-full bg-creme lg:grid-cols-[1.18fr_1fr]">
+    <div className="grid min-h-full bg-canvas lg:grid-cols-[1.18fr_1fr]">
       {/* ——— palco ——— */}
       <section className="relative isolate flex min-h-[46vh] flex-col justify-between overflow-hidden bg-vinho-900 px-7 py-8 text-white sm:px-12 sm:py-11 lg:min-h-screen">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(120%_90%_at_15%_0%,#7a1a2e_0%,#4a0f1d_55%,#2b0810_100%)]" />
         <div className="absolute inset-0 -z-10"><CampoLosangos /></div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-vinho-950/90 to-transparent" />
 
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}
-          className="flex items-center justify-between">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="flex items-center justify-between">
           <Logo branco className="h-9 w-auto sm:h-11" />
-          <span className="hidden rounded-full border border-white/15 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70 sm:block">
-            Segurança do Trabalho
-          </span>
+          <span className="hidden rounded-full border border-white/15 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/70 sm:block">Segurança do Trabalho</span>
         </motion.div>
 
         <div className="mt-14 max-w-[720px] lg:mt-0">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
-            className="mb-5 flex items-center gap-1.5" aria-label="Dias da semana: quarta-feira em destaque">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mb-6 flex items-center gap-1.5" aria-label="Dias da semana: quarta-feira em destaque">
             {DIAS.map((d, i) => (
-              <motion.span key={i}
-                initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.05, type: "spring", stiffness: 300, damping: 18 }}
+              <motion.span key={i} initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.05, type: "spring", stiffness: 300, damping: 18 }}
                 className={`relative grid h-8 w-8 place-items-center rounded-full text-[12px] font-extrabold ${i === 3 ? "bg-ambar text-vinho-950" : "bg-white/8 text-white/45"}`}>
                 {d}
                 {i === 3 && <span className="absolute inset-0 -z-10 animate-ping rounded-full bg-ambar/50" />}
@@ -131,84 +103,43 @@ export default function Login() {
             <span className="ml-3 text-[12.5px] font-semibold text-white/60">toda quarta-feira</span>
           </motion.div>
 
-          <h1 className="display text-[clamp(52px,8.2vw,118px)] leading-[0.92] tracking-[-0.02em]">
+          <h1 className="display text-[clamp(44px,6.6vw,96px)] leading-[0.98]">
             {["Dia da", "Segurança"].map((l, i) => (
-              <span key={l} className="block overflow-hidden pb-[0.06em]">
+              <span key={l} className="block overflow-hidden pb-[0.08em]">
                 <motion.span className="block" initial={{ y: "105%" }} animate={{ y: 0 }} transition={{ delay: 0.15 + i * 0.12, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>{l}</motion.span>
               </span>
             ))}
-            <span className="block overflow-hidden pb-[0.08em]">
-              <motion.span className="block italic text-ambar" initial={{ y: "105%" }} animate={{ y: 0 }} transition={{ delay: 0.39, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>Ativa.</motion.span>
+            <span className="block overflow-hidden pb-[0.1em]">
+              <motion.span className="block bg-gradient-to-r from-ambar to-[#ffd98a] bg-clip-text text-transparent" initial={{ y: "105%" }} animate={{ y: 0 }} transition={{ delay: 0.39, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>Ativa.</motion.span>
             </span>
           </h1>
-          <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}
-            className="mt-6 max-w-[460px] text-[16px] font-medium leading-relaxed text-white/70">
+          <motion.p initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }} className="mt-6 max-w-[460px] text-[16px] font-medium leading-relaxed text-white/70">
             Uma visita, uma ação, uma foto. Registre o que você viu em campo — com data, hora e local — e deixe a segurança aparecer.
           </motion.p>
         </div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
-          className="mt-10 flex flex-wrap items-end gap-x-10 gap-y-4 lg:mt-0">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }} className="mt-10 flex flex-wrap items-end gap-x-10 gap-y-4 lg:mt-0">
           <div>
-            <div className="display text-[54px] leading-none text-white">
-              {pronto ? <CountUp valor={total} /> : "—"}
-            </div>
+            <div className="display text-[48px] leading-none text-white">{pronto ? <CountUp valor={total} /> : "—"}</div>
             <div className="eyebrow !text-white/50">ações registradas em {new Date().getFullYear()}</div>
           </div>
-          <div className="flex items-center gap-2 pb-1 text-[12.5px] font-semibold text-white/55">
-            <WifiOff size={15} /> Funciona sem sinal · envia quando a rede voltar
-          </div>
+          <div className="flex items-center gap-2 pb-1 text-[12.5px] font-semibold text-white/55"><WifiOff size={15} /> Funciona sem sinal · envia quando a rede voltar</div>
         </motion.div>
       </section>
 
       {/* ——— acesso ——— */}
       <section className="relative flex items-center justify-center px-6 py-12 sm:px-12">
-        <motion.form onSubmit={enviar} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[400px]">
-          <Logo className="mb-10 h-14 w-auto" />
+        <div className="absolute right-5 top-5"><TemaToggle /></div>
+        <motion.form onSubmit={enviar} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.8, ease: [0.22, 1, 0.36, 1] }} className="w-full max-w-[400px]">
+          <Logo className="mb-10 h-14 w-auto dark:hidden" />
+          <Logo branco className="mb-10 hidden h-14 w-auto dark:block" />
           <div className="eyebrow mb-2">Acesso do observador</div>
-          <h2 className="display text-[40px] leading-[1.02] text-vinho-900">Quem está em campo hoje?</h2>
-          <p className="mt-3 text-[14.5px] font-medium text-black/55">Digite seu nome e escolha na lista para começar.</p>
+          <h2 className="display text-[34px] leading-[1.08] text-brand">Quem está em campo hoje?</h2>
+          <p className="mt-3 text-[14.5px] font-medium text-ink/55">Digite seu nome e escolha na lista para começar.</p>
 
           <motion.div animate={tremer} className="mt-8">
-            <label htmlFor="nome" className="eyebrow mb-2 block">Seu nome</label>
-            <div className="relative">
-              <input id="nome" autoComplete="off" autoFocus placeholder="Comece a digitar…" role="combobox" aria-expanded={aberto} aria-controls="lista-nomes"
-                value={texto} onChange={e => { setTexto(e.target.value); setSel(null); setAberto(true); setHi(0); setErro(""); }}
-                onFocus={() => setAberto(true)} onBlur={() => setTimeout(() => setAberto(false), 120)} onKeyDown={teclas}
-                className="campo !h-16 !rounded-2xl !text-[17px]" />
-              {aberto && sugestoes.length > 0 && !sel && (
-                <ul id="lista-nomes" role="listbox" className="absolute inset-x-0 top-[68px] z-10 overflow-hidden rounded-2xl border border-black/10 bg-white p-1.5 shadow-[0_24px_48px_-16px_rgba(74,15,29,.45)]">
-                  {sugestoes.map((c, i) => (
-                    <li key={c.c} role="option" aria-selected={i === hi}>
-                      <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => escolher(c)} onMouseEnter={() => setHi(i)}
-                        className={"flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition " + (i === hi ? "bg-vinho-50" : "")}>
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-vinho-700 text-[12px] font-extrabold text-white">{c.nome.slice(0, 2)}</span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-[14px] font-bold text-vinho-900">{c.nome}</span>
-                          <span className="block truncate text-[11.5px] font-medium text-black/45">{c.f.toLowerCase()} · {c.b}</span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="mt-3 min-h-[44px]">
-              {sel ? (
-                <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 rounded-2xl bg-vinho-50 px-4 py-2.5">
-                  <div className="grid h-8 w-8 place-items-center rounded-full bg-vinho-700 text-[12px] font-extrabold text-white">{sel.nome.slice(0, 2)}</div>
-                  <div className="leading-tight">
-                    <div className="text-[14px] font-bold text-vinho-900">Olá, {sel.nome.split(" ")[0][0] + sel.nome.split(" ")[0].slice(1).toLowerCase()}</div>
-                    <div className="text-[11.5px] font-medium text-black/50">{sel.f.toLowerCase()} · {sel.b}</div>
-                  </div>
-                </motion.div>
-              ) : texto && !sugestoes.length ? (
-                <div className="px-1 text-[13px] font-bold text-vinho-600">Nome não encontrado. Só lideranças lançam; fale com o SESMT.</div>
-              ) : erro ? (
-                <div role="alert" className="px-1 text-[13px] font-bold text-vinho-600">{erro}</div>
-              ) : null}
-            </div>
+            <BuscaNome opcoes={lideres} sel={sel} onSel={c => { setSel(c); setErro(""); }} aviso="Nome não encontrado. Só lideranças lançam; fale com o SESMT." />
+            {erro && !sel && <div role="alert" className="-mt-9 px-1 text-[13px] font-bold text-vinho-500">{erro}</div>}
           </motion.div>
 
           <button className="btn btn-vinho group mt-3 !h-14 w-full text-[15.5px]" disabled={!pronto}>
@@ -216,15 +147,11 @@ export default function Login() {
             <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
           </button>
 
-          <div className="mt-8 flex items-center gap-2.5 rounded-2xl border border-black/8 bg-white/60 px-4 py-3 text-[12.5px] font-semibold text-black/55">
-            <CalendarCheck2 size={17} className="shrink-0 text-vinho-600" />
+          <div className="mt-8 flex items-center gap-2.5 rounded-2xl border border-ink/10 bg-card/60 px-4 py-3 text-[12.5px] font-semibold text-ink/55">
+            <CalendarCheck2 size={17} className="shrink-0 text-vinho-500" />
             {hoje.weekday === 3 ? "Hoje é quarta-feira: lançamentos liberados." : "Lançamentos são liberados às quartas-feiras."}
           </div>
-          {origem === "demo" && (
-            <p className="mt-4 text-center text-[11.5px] font-semibold text-black/40">
-              Versão de demonstração · dados fictícios · experimente digitar "Murilo"
-            </p>
-          )}
+          {origem === "demo" && <p className="mt-4 text-center text-[11.5px] font-semibold text-ink/40">Versão de demonstração · dados fictícios · experimente digitar "Murilo"</p>}
         </motion.form>
       </section>
     </div>

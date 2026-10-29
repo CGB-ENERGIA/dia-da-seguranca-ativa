@@ -3,6 +3,7 @@ import { clsx } from "clsx";
 import { Vazio } from "./ui";
 
 export const CORES = ["#4a0f1d", "#701627", "#9c2a42", "#cd6f81", "#f2b134", "#8a8583", "#df9fab"];
+export const CORES_ESCURO = ["#f2b9c4", "#e0788d", "#cd6f81", "#b74a60", "#f2b134", "#9a9390", "#df9fab"];
 
 /** Barras horizontais animadas; clicar filtra. */
 export function BarrasH({ itens, ativo, onClick, max, formato }: {
@@ -18,14 +19,14 @@ export function BarrasH({ itens, ativo, onClick, max, formato }: {
         return (
           <li key={it.nome}>
             <button onClick={() => onClick?.(on ? "" : it.nome)} disabled={!onClick}
-              className={clsx("group grid w-full grid-cols-[84px_1fr_auto] items-center gap-3 rounded-xl px-1.5 py-1 text-left transition", onClick && "hover:bg-vinho-50", on && "bg-vinho-50")}>
-              <span className={clsx("truncate text-[12.5px] font-bold", on ? "text-vinho-700" : "text-tinta/80")} title={it.nome}>{it.nome}</span>
-              <span className="h-[26px] overflow-hidden rounded-lg bg-black/[.045]">
-                <motion.span className={clsx("block h-full rounded-lg", on ? "bg-ambar" : "bg-gradient-to-r from-vinho-800 to-vinho-600")}
+              className={clsx("group grid w-full grid-cols-[84px_1fr_auto] items-center gap-3 rounded-xl px-1.5 py-1 text-left transition", onClick && "hover:bg-soft", on && "bg-soft")}>
+              <span className={clsx("truncate text-[12.5px] font-bold", on ? "text-brand" : "text-ink/80")} title={it.nome}>{it.nome}</span>
+              <span className="h-[26px] overflow-hidden rounded-lg bg-ink/[.045]">
+                <motion.span className={clsx("block h-full rounded-lg", on ? "bg-ambar" : "bg-gradient-to-r from-vinho-800 to-vinho-600 dark:from-vinho-600 dark:to-vinho-400")}
                   initial={{ width: 0 }} animate={{ width: `${Math.max(2, (it.valor / m) * 100)}%` }}
                   transition={{ duration: 0.8, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }} />
               </span>
-              <span className="num min-w-[34px] text-right text-[13px] font-extrabold text-vinho-900">{formato ? formato(it.valor) : it.valor.toLocaleString("pt-BR")}</span>
+              <span className="num min-w-[34px] text-right text-[13px] font-extrabold text-brand">{formato ? formato(it.valor) : it.valor.toLocaleString("pt-BR")}</span>
             </button>
           </li>
         );
@@ -45,11 +46,11 @@ export function Colunas({ itens, ativo, onClick, altura = 190 }: {
         const on = ativo === it.nome;
         return (
           <button key={it.nome} onClick={() => onClick?.(on ? "" : it.nome)} className="group flex h-full flex-1 flex-col items-center justify-end gap-1.5">
-            <span className="num text-[13px] font-extrabold text-vinho-900">{it.valor}</span>
-            <motion.span className={clsx("w-full max-w-[56px] rounded-t-xl", on ? "bg-ambar" : "bg-gradient-to-t from-vinho-900 to-vinho-600 group-hover:from-vinho-700")}
+            <span className="num text-[13px] font-extrabold text-brand">{it.valor}</span>
+            <motion.span className={clsx("w-full max-w-[56px] rounded-t-xl", on ? "bg-ambar" : "bg-gradient-to-t from-vinho-900 to-vinho-600 group-hover:from-vinho-700 dark:from-vinho-600 dark:to-vinho-400")}
               initial={{ height: 0 }} animate={{ height: `${Math.max(3, (it.valor / m) * (altura - 56))}px` }}
               transition={{ duration: 0.8, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }} />
-            <span className="text-[11.5px] font-bold text-black/50">{it.rot ?? it.nome}</span>
+            <span className="text-[11.5px] font-bold text-ink/50">{it.rot ?? it.nome}</span>
           </button>
         );
       })}
@@ -58,7 +59,7 @@ export function Colunas({ itens, ativo, onClick, altura = 190 }: {
 }
 
 /** Anel de progresso. */
-export function Anel({ pct, tam = 120, cor = "#701627", fundo = "rgba(35,22,25,.08)", children }: {
+export function Anel({ pct, tam = 120, cor = "var(--color-vinho-500)", fundo = "color-mix(in srgb, var(--color-ink) 10%, transparent)", children }: {
   pct: number; tam?: number; cor?: string; fundo?: string; children?: React.ReactNode;
 }) {
   const r = tam / 2 - 9, c = 2 * Math.PI * r;
@@ -72,5 +73,20 @@ export function Anel({ pct, tam = 120, cor = "#701627", fundo = "rgba(35,22,25,.
       </svg>
       <div className="absolute inset-0 grid place-items-center">{children}</div>
     </div>
+  );
+}
+
+/** Linha de tendência decorativa para o herói. */
+export function Spark({ dados, className }: { dados: number[]; className?: string }) {
+  if (dados.length < 2) return null;
+  const W = 600, H = 120, m = Math.max(...dados, 1);
+  const pts = dados.map((v, i) => [(i / (dados.length - 1)) * W, H - 10 - (v / m) * (H - 24)]);
+  const d = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className={className} aria-hidden>
+      <defs><linearGradient id="spk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f2b134" stopOpacity=".35" /><stop offset="1" stopColor="#f2b134" stopOpacity="0" /></linearGradient></defs>
+      <path d={d + ` L ${W} ${H} L 0 ${H} Z`} fill="url(#spk)" />
+      <motion.path d={d} fill="none" stroke="#f2b134" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.4, ease: "easeOut" }} vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }

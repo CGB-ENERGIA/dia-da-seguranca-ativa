@@ -33,16 +33,14 @@ insert into storage.buckets (id, name, public) values ('evidencias', 'evidencias
 create policy "enviar fotos" on storage.objects for insert to anon with check (bucket_id = 'evidencias');
 create policy "ler fotos"    on storage.objects for select to anon using (bucket_id = 'evidencias');
 
--- Cadastro de colaboradores (opcional). Se o seu projeto já tem uma tabela de colaboradores,
--- ignore este bloco e aponte o app para ela (campos usados: chapa, nome, funcao, base, processo, gerencia, situacao).
-create table if not exists public.colaboradores (
-  chapa    integer primary key,
-  nome     text not null,
-  funcao   text,
-  base     text,
-  processo text,
-  gerencia text,
-  situacao text
-);
-alter table public.colaboradores enable row level security;
-create policy "ler colaboradores" on public.colaboradores for select to anon using (true);
+-- A tabela public.colaboradores JÁ EXISTE no projeto SESMT: não é criada aqui. O app lê as colunas dela
+-- (mapeamento em src/lib/remote.ts). Só é preciso liberar leitura para o app:
+--   alter table public.colaboradores enable row level security;
+--   create policy "ler colaboradores" on public.colaboradores for select to anon using (true);
+
+-- Configurações compartilhadas (meta por quarta-feira e edições feitas na aba Configurações do relatório)
+create table if not exists public.config (chave text primary key, valor jsonb not null);
+alter table public.config enable row level security;
+create policy "ler config"     on public.config for select to anon using (true);
+create policy "gravar config"  on public.config for insert to anon with check (true);
+create policy "alterar config" on public.config for update to anon using (true) with check (true);

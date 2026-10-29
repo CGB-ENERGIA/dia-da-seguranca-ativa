@@ -14,15 +14,15 @@ function Lista({ itens, vazio }: { itens: { p: string; n: number; sub: string }[
   return (
     <>
       <div className="relative mb-3">
-        <Search size={15} className="absolute left-3.5 top-[13px] text-black/35" />
+        <Search size={15} className="absolute left-3.5 top-[13px] text-ink/35" />
         <input className="campo !h-10 !pl-10 !text-[13px]" placeholder="Buscar equipe" value={q} onChange={e => setQ(e.target.value)} />
       </div>
       <ul className="rolagem max-h-[520px] space-y-0.5 overflow-y-auto pr-1">
         {l.map(i => (
-          <li key={i.p} className="grid grid-cols-[1fr_64px_28px] items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-vinho-50">
-            <div className="min-w-0"><div className="truncate font-mono text-[12.5px] font-bold text-vinho-900">{i.p}</div><div className="truncate text-[10.5px] font-semibold text-black/40">{i.sub}</div></div>
-            <span className="h-2 overflow-hidden rounded-full bg-black/[.05]"><span className="block h-full rounded-full bg-vinho-600" style={{ width: `${(i.n / max) * 100}%` }} /></span>
-            <span className="num text-right text-[13px] font-extrabold text-vinho-900">{i.n}</span>
+          <li key={i.p} className="grid grid-cols-[1fr_64px_28px] items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-soft">
+            <div className="min-w-0"><div className="truncate font-mono text-[12.5px] font-bold text-brand">{i.p}</div><div className="truncate text-[10.5px] font-semibold text-ink/40">{i.sub}</div></div>
+            <span className="h-2 overflow-hidden rounded-full bg-ink/[.05]"><span className="block h-full rounded-full bg-vinho-600" style={{ width: `${(i.n / max) * 100}%` }} /></span>
+            <span className="num text-right text-[13px] font-extrabold text-brand">{i.n}</span>
           </li>
         ))}
         {!l.length && <Vazio texto={vazio} />}
@@ -60,16 +60,16 @@ export default function Equipes() {
         <div className="space-y-5 xl:col-span-1">
           <Card titulo="Taxa de contato" sub="equipes visitadas ÷ equipes ativas">
             <div className="flex items-center gap-6">
-              <Anel pct={taxa} tam={148}><div className="text-center"><div className="display text-[44px] leading-none text-vinho-900"><CountUp valor={Math.round(taxa * 100)} />%</div></div></Anel>
-              <dl className="space-y-3 text-[13px] font-semibold text-black/55">
-                <div><dt className="eyebrow !text-[10px]">visitas</dt><dd className="display text-[36px] leading-none text-vinho-800"><CountUp valor={nVisitas} /></dd></div>
-                <div><dt className="eyebrow !text-[10px]">equipes visitadas</dt><dd className="display text-[36px] leading-none text-vinho-800"><CountUp valor={cobertas} /><span className="text-[18px] text-black/35"> / {universo.length}</span></dd></div>
+              <Anel pct={taxa} tam={148}><div className="text-center"><div className="display text-[44px] leading-none text-brand"><CountUp valor={Math.round(taxa * 100)} />%</div></div></Anel>
+              <dl className="space-y-3 text-[13px] font-semibold text-ink/55">
+                <div><dt className="eyebrow !text-[10px]">visitas</dt><dd className="display text-[36px] leading-none text-brand"><CountUp valor={nVisitas} /></dd></div>
+                <div><dt className="eyebrow !text-[10px]">equipes visitadas</dt><dd className="display text-[36px] leading-none text-brand"><CountUp valor={cobertas} /><span className="text-[18px] text-ink/35"> / {universo.length}</span></dd></div>
               </dl>
             </div>
           </Card>
           <Card titulo="Visitas por Base" sub="observador × equipe × dia">
             <BarrasH itens={visBase} ativo={f.base} onClick={n => set({ base: n })} />
-            <p className="mt-4 text-[11.5px] font-semibold leading-relaxed text-black/40">
+            <p className="mt-4 text-[11.5px] font-semibold leading-relaxed text-ink/40">
               Ações no período: {acoesBase.reduce((a, b) => a + b.valor, 0)}. Várias ações do mesmo observador na mesma equipe/dia contam como uma única visita.
             </p>
           </Card>
