@@ -12,10 +12,26 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="format-detection" content="telephone=no" />
     <title>Dia da Segurança Ativa · CGB Energia</title>
-    <script type="module" crossorigin src="/dia-da-seguranca-ativa/assets/index-AAK4BC8Y.js"></script>
-    <link rel="stylesheet" crossorigin href="/dia-da-seguranca-ativa/assets/index-DliwvqAQ.css">
+    <script type="module" crossorigin src="/dia-da-seguranca-ativa/assets/index-BjrooBWb.js"></script>
+    <link rel="stylesheet" crossorigin href="/dia-da-seguranca-ativa/assets/index-BU3yyi7c.css">
   <link rel="manifest" href="/dia-da-seguranca-ativa/manifest.webmanifest"></head>
   <body>
     <div id="root"></div>
+    <div id="falha" style="display:none;position:fixed;inset:0;z-index:99;background:#0f0809;color:#f5ecee;font:600 16px/1.5 system-ui,sans-serif;padding:32px;text-align:center;align-content:center">
+      <div style="max-width:420px;margin:auto">
+        <div style="font-size:22px;font-weight:800;margin-bottom:12px">Não consegui abrir o aplicativo</div>
+        <p>Isso costuma ser navegador desatualizado, aba anônima ou conexão instável. Tente: atualizar a página, abrir no Chrome (Android) ou Safari (iPhone), ou limpar os dados do site.</p>
+        <button onclick="try{navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister()})});caches.keys().then(function(k){k.forEach(function(x){caches.delete(x)})})}catch(e){};setTimeout(function(){location.reload()},400)" style="margin-top:18px;height:48px;padding:0 24px;border:0;border-radius:14px;background:#9c2a42;color:#fff;font:700 16px system-ui">Limpar e recarregar</button>
+        <p id="falha-det" style="margin-top:18px;font-size:12px;opacity:.6"></p>
+      </div>
+    </div>
+    <script>
+      (function () {
+        function mostrar(m) { var f = document.getElementById("falha"); if (!f || window.__dsa_ok) return; f.style.display = "grid"; var d = document.getElementById("falha-det"); if (d && m) d.textContent = String(m).slice(0, 160); }
+        window.addEventListener("error", function (e) { setTimeout(function () { mostrar(e.message); }, 4000); });
+        window.addEventListener("unhandledrejection", function (e) { setTimeout(function () { mostrar(e.reason && e.reason.message); }, 4000); });
+        setTimeout(function () { mostrar("tempo esgotado"); }, 12000);
+      })();
+    </script>
   </body>
 </html>
