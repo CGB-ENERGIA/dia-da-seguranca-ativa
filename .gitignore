@@ -10,3 +10,7 @@ public/seed/
 .claude/
 supabase/colaboradores-seed.sql
 supabase/historico/
+.vercel
+
+.vercel
+.env*

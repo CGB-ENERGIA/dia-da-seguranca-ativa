@@ -68,7 +68,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
   const entrarAdm = useAuth(s => s.entrarAdm);
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
-  const { historico, remotos, locais, colabs, pronto, origem } = useData();
+  const { historico, remotos, locais, colabs, pronto } = useData();
   const total = useMemo(() => todosRegistros({ historico, remotos, locais }).filter(r => r.d.startsWith(String(new Date().getFullYear()))).length, [historico, remotos, locais]);
   const lideres = useMemo(() => colabs.filter(c => c.l === 1 && c.s === "A"), [colabs]);
   const [sel, setSel] = useState<Colab | null>(null);
@@ -175,7 +175,6 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
             <CalendarCheck2 size={17} className="shrink-0 text-vinho-500" />
             {hoje.weekday === 3 ? "Hoje é quarta-feira: lançamentos liberados." : "Lançamentos são liberados às quartas-feiras."}
           </div>
-          {origem === "demo" && <p className="mt-4 text-center text-[11.5px] font-semibold text-ink/40">Versão de demonstração · dados fictícios · experimente digitar "Murilo"</p>}
         </motion.form>
       </section>
     </div>

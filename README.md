@@ -13,25 +13,20 @@ PWA (React 19 + Bun + Vite + Tailwind 4) para registrar as ações do Dia da Seg
 - Foto feita dentro do app, carimbada com data, hora, localidade (GPS) e observador; download após salvar.
 - Offline: lançamento + foto ficam no IndexedDB e a fila é enviada ao voltar a rede.
 
-## Rodar
+## Rodar localmente
 ```bash
 bun install
-bun run seed:demo          # dados fictícios  (ou: bun run seed:real "C:\pasta\das\planilhas")
+cp .env.example .env        # URL e chave anon do Supabase
+bun run seed:real "C:\pasta\DSA" "C:\...\10 - Out.26.xlsx"   # opcional: dados locais para desenvolvimento
 bun run dev
 ```
-`seed:real` lê `DIA DSA - 24.xlsx` e `DIA DSA - 26.xlsx` e gera `public/seed/*.json`
-(**ignorado pelo git**: contém nomes e matrículas).
 
-## Backend (centralizar os lançamentos)
-1. Crie um projeto no Supabase e rode `supabase/schema.sql`.
-2. Copie `.env.example` para `.env` e preencha URL e chave anon.
-3. `bun run build` — o app passa a enviar registros/fotos e o painel lê os lançamentos de todos.
-
-## Deploy (GitHub Pages)
-```bash
-bun run deploy   # gera seed demo, build com base /dia-da-seguranca-ativa/ e publica em gh-pages
-```
+## Produção (Vercel + Supabase)
+- O projeto da Vercel está ligado a este repositório: cada `git push` na `main` publica sozinho.
+- O build (`bun run build`) gera um seed vazio de pessoas (`scripts/prebuild.ts`); cadastro e histórico vêm do Supabase.
+- Variáveis na Vercel: `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
+- Banco: rode `supabase/setup.sql`; carregue colaboradores (`bun run sql:colabs`) e histórico (`bun scripts/carregar-historico.ts`).
 
 ## Dois links
-- `…/#/registrar` — observadores: login por nome, lançar ação com foto, meus lançamentos.
-- `…/#/relatorio` — painel, colaboradores, equipes e **Configurações** (edição de cadastros e da meta; exige nome da equipe de Segurança).
+- `/#/registrar` — observadores: login por nome, lançar ação com foto, meus lançamentos.
+- `/#/relatorio` — painel, colaboradores, equipes e **Configurações** (usuário e senha).

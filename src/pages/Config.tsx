@@ -53,7 +53,7 @@ function Gaveta({ titulo, aberto, onFechar, children }: { titulo: string; aberto
 
 export default function Config() {
   const [gestor, setGestor] = useState(true);
-  const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, origem, historico } = useData();
+  const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, historico } = useData();
   const { linhas } = useDados();
   const { pendentes, online, sincronizando } = useSync();
   const { liberarDia, setLiberar } = useAuth();
@@ -269,7 +269,7 @@ export default function Config() {
               {[
                 [remotoAtivo, remotoAtivo ? "Servidor conectado (Supabase)" : "Servidor não configurado", remotoAtivo ? "Registros, fotos e edições são compartilhados." : "Registros e edições ficam só neste aparelho."],
                 [online, online ? "Com conexão" : "Sem conexão", `${pendentes} lançamento(s) na fila`],
-                [true, origem === "demo" ? "Base de demonstração (fictícia)" : "Base histórica importada", `${historico.length.toLocaleString("pt-BR")} ações · ${colabs.length} colaboradores · ${equipes.length} equipes`],
+                [true, remotoAtivo ? "Cadastro e histórico no Supabase" : "Base histórica importada", `${historico.length.toLocaleString("pt-BR")} ações · ${colabs.length} colaboradores · ${equipes.length} equipes`],
               ].map(([ok, tt, d]) => (
                 <li key={String(tt)} className="flex items-start gap-3">
                   {ok ? <CheckCircle2 size={19} className="mt-0.5 shrink-0 text-oliva" /> : <CircleDashed size={19} className="mt-0.5 shrink-0 text-ambar" />}
