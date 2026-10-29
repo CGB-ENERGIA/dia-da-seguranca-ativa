@@ -11,7 +11,8 @@
     "seed:real": "bun scripts/import-real.ts",
     "deploy": "bun run seed:demo && cross-env BASE_PATH=/dia-da-seguranca-ativa/ bun run build && gh-pages -d dist",
     "sql:colabs": "bun scripts/gerar-sql-colaboradores.ts",
-    "sql:historico": "bun scripts/gerar-sql-historico.ts"
+    "sql:historico": "bun scripts/gerar-sql-historico.ts",
+    "seed:prod": "bun scripts/seed-producao.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",

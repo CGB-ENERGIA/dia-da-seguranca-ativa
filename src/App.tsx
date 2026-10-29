@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import Shell from "./components/Shell";
 import RegistrarShell from "./components/RegistrarShell";
@@ -39,6 +39,23 @@ function FalhaCarga({ msg }: { msg: string }) {
   );
 }
 
+function AvisoVersao() {
+  const [nova, setNova] = useState(false);
+  useEffect(() => {
+    const f = () => setNova(true);
+    window.addEventListener("dsa-nova-versao", f);
+    return () => window.removeEventListener("dsa-nova-versao", f);
+  }, []);
+  if (!nova) return null;
+  return (
+    <div className="fixed inset-x-4 bottom-4 z-[70] mx-auto flex max-w-[420px] items-center gap-3 rounded-2xl bg-vinho-950 p-3 pl-5 text-white shadow-2xl">
+      <span className="flex-1 text-[13.5px] font-semibold">Nova versão disponível</span>
+      <button className="btn btn-vinho !h-10 !px-4 text-[13px]" onClick={() => (window as unknown as { __atualizarApp?: () => void }).__atualizarApp?.()}>Atualizar</button>
+      <button className="grid h-10 w-10 place-items-center rounded-xl text-white/60" onClick={() => setNova(false)} aria-label="Depois">✕</button>
+    </div>
+  );
+}
+
 function Registrar() {
   const chapa = useAuth(s => s.chapa);
   return chapa ? <RegistrarShell /> : <Login />;
@@ -64,6 +81,7 @@ export default function App() {
 
   return (
     <HashRouter>
+      <AvisoVersao />
       <Routes>
         <Route index element={<Navigate to="/registrar" replace />} />
         <Route path="registrar" element={<Registrar />}>

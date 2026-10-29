@@ -79,9 +79,11 @@ export const useData = create<DataState>((set, get) => {
 
     async carregar() {
       try {
+        // com servidor conectado, o seed local é opcional (cadastro e histórico vêm do banco)
+        const tol = <T,>(p: Promise<T>, vazio: T) => (remotoAtivo ? p.catch(() => vazio) : p);
         const [roster, linhas, meta] = await Promise.all([
-          buscar<{ colabs: Colab[]; equipes: Equipe[] }>("roster.json"),
-          buscar<[string, number, string, number][]>("registros.json"),
+          tol(buscar<{ colabs: Colab[]; equipes: Equipe[] }>("roster.json"), { colabs: [], equipes: [] }),
+          tol(buscar<[string, number, string, number][]>("registros.json"), []),
           buscar<{ origem: string }>("meta.json").catch(() => ({ origem: "" })),
         ]);
         const historico: Reg[] = linhas.map((x, i) => ({
@@ -89,9 +91,15 @@ export const useData = create<DataState>((set, get) => {
         }));
         let ed = { ...vazio(), ...((await kvGet<Edicoes>("edicoes")) ?? {}) };
         let base = roster.colabs;
-        if (remotoAtivo && navigator.onLine) {
-          const [cfg, rem] = await Promise.all([lerConfig<Edicoes>("edicoes").catch(() => null), lerColaboradoresRemotos().catch(() => null)]);
-          if (cfg) ed = { ...vazio(), ...cfg };
+        if (remotoAtivo) {
+          const on = navigator.onLine;
+          const [cfg, rem0] = await Promise.all([
+            on ? lerConfig<Edicoes>("edicoes").catch(() => null) : Promise.resolve(null),
+            on ? lerColaboradoresRemotos().catch(() => null) : Promise.resolve(null),
+          ]);
+          if (rem0?.length) void kvSet("colabs-remotos", rem0);
+          const rem = rem0?.length ? rem0 : await kvGet<Partial<Colab>[]>("colabs-remotos");
+          if (cfg) { ed = { ...vazio(), ...cfg }; void kvSet("edicoes", ed); }
           if (rem?.length) {
             const antigos = new Map(base.map(c => [c.c, c]));
             base = rem.map(r => { const a = antigos.get(r.c!); return { gr: "", ger: "", ...a, ...r, n: r.n ?? a?.n ?? (r.nome ?? "").split(" ")[0], l: r.l ?? a?.l ?? (ehLideranca(r.f ?? "") ? 1 : 0) } as Colab; });
