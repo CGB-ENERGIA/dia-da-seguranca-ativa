@@ -126,3 +126,7 @@ body {
 
 .recharts-tooltip-wrapper { outline: none; }
 @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* lista aberta dos filtros: segue o tema (antes ficava clara no modo escuro) */
+select option { background-color: var(--color-card); color: var(--color-ink); }
+select option:checked { background-color: var(--color-vinho-700); color: #fff; }
