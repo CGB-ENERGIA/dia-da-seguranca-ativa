@@ -24,7 +24,7 @@ function Miniatura({ id }: { id?: string }) {
 }
 
 export default function Meus() {
-  const chapa = useAuth(s => s.chapa);
+  const chapa = useAuth(s => s.perfil?.chapa ?? null);
   const { historico, remotos, locais, recarregarLocais } = useData();
   const meus = useMemo(
     () => todosRegistros({ historico: [], remotos, locais }).filter(r => r.chapa === chapa).sort((a, b) => (b.d + b.t).localeCompare(a.d + a.t)),

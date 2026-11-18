@@ -2,23 +2,26 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
-import { ChevronsLeft, Database, LayoutDashboard, Sparkles, Maximize, Menu, Minimize, Settings2, UsersRound, Waypoints, X, Camera } from "lucide-react";
+import { ChevronsLeft, KeyRound, UserCog, Database, LayoutDashboard, Sparkles, Maximize, Menu, Minimize, Settings2, UsersRound, Waypoints, X, Camera } from "lucide-react";
 import { Logo, TemaToggle } from "./ui";
+import AlterarSenha from "./AlterarSenha";
 import { LogOut } from "lucide-react";
-import { useAuth } from "../store/auth";
+import { NIVEIS, podeAcessar, useAuth, type Nivel } from "../store/auth";
 
-const ITENS = [
-  { to: "/relatorio", rot: "Painel de Ações", icone: LayoutDashboard, fim: true },
-  { to: "/relatorio/colaboradores", rot: "Colaboradores", icone: UsersRound },
-  { to: "/relatorio/equipes", rot: "Equipes", icone: Waypoints },
-  { to: "/relatorio/insights", rot: "Insights", icone: Sparkles },
-  { to: "/relatorio/banco", rot: "Banco de dados", icone: Database },
-  { to: "/relatorio/config", rot: "Configurações", icone: Settings2 },
+const ITENS: { to: string; rot: string; icone: typeof LayoutDashboard; fim?: boolean; min: Nivel }[] = [
+  { to: "/relatorio", rot: "Painel de Ações", icone: LayoutDashboard, fim: true, min: "consulta" },
+  { to: "/relatorio/colaboradores", rot: "Colaboradores", icone: UsersRound, min: "consulta" },
+  { to: "/relatorio/equipes", rot: "Equipes", icone: Waypoints, min: "consulta" },
+  { to: "/relatorio/insights", rot: "Insights", icone: Sparkles, min: "consulta" },
+  { to: "/relatorio/banco", rot: "Banco de dados", icone: Database, min: "gestor" },
+  { to: "/relatorio/config", rot: "Configurações", icone: Settings2, min: "gestor" },
+  { to: "/relatorio/usuarios", rot: "Usuários", icone: UserCog, min: "admin" },
 ];
 const TITULOS: Record<string, [string, string]> = {
   "/relatorio": ["Visão geral", "Painel de Ações"],
   "/relatorio/insights": ["Gestão", "Insights"],
   "/relatorio/banco": ["Gestão", "Banco de dados"],
+  "/relatorio/usuarios": ["Gestão", "Usuários"],
   "/relatorio/colaboradores": ["Desempenho", "Colaboradores"],
   "/relatorio/equipes": ["Cobertura", "Equipes visitadas"],
   "/relatorio/config": ["Gestão", "Configurações"],
@@ -32,7 +35,9 @@ export default function Shell() {
   const [gaveta, setGaveta] = useState(false);
   const [tela, setTela] = useState(false);
   const loc = useLocation();
-  const { adm, sairAdm: sair } = useAuth();
+  const { perfil, sair } = useAuth();
+  const [senhaAberta, setSenhaAberta] = useState(false);
+  const itens = ITENS.filter(i => podeAcessar(perfil?.nivel, i.min));
 
   useEffect(() => { guardar("dsa:menu", recolhido ? "1" : "0"); }, [recolhido]);
   useEffect(() => { setGaveta(false); document.querySelector("main")?.scrollTo(0, 0); }, [loc.pathname]);
@@ -64,7 +69,7 @@ export default function Shell() {
       </div>
 
       <nav className="relative mt-3 flex flex-col gap-1 px-3">
-        {ITENS.map(({ to, rot, icone: Icone, fim }) => (
+        {itens.map(({ to, rot, icone: Icone, fim }) => (
           <NavLink key={to} to={to} end={fim} title={rot}
             className={({ isActive }) => clsx(
               "relative flex h-12 items-center gap-3 rounded-2xl text-[14px] font-semibold transition",
@@ -106,6 +111,8 @@ export default function Shell() {
         <ChevronsLeft size={16} className={clsx("transition-transform duration-500", recolhido && "rotate-180")} />
       </button>
 
+      <AnimatePresence>{senhaAberta && <AlterarSenha onFechar={() => setSenhaAberta(false)} />}</AnimatePresence>
+
       <AnimatePresence>
         {gaveta && (
           <>
@@ -129,9 +136,13 @@ export default function Shell() {
           </div>
           <TemaToggle />
           <div className="flex items-center gap-2 rounded-xl bg-field py-1.5 pl-1.5 pr-1.5 shadow-sm">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-vinho-700 text-[12px] font-extrabold text-white">AD</div>
-            <span className="hidden max-w-[140px] truncate text-[13px] font-bold sm:block">{adm}</span>
-            <button onClick={sair} title="Sair" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><LogOut size={16} /></button>
+            <div className="grid h-8 w-8 place-items-center rounded-lg bg-vinho-700 text-[12px] font-extrabold text-white">{perfil?.nome.slice(0, 2)}</div>
+            <div className="hidden max-w-[170px] leading-tight sm:block">
+              <div className="truncate text-[13px] font-bold">{perfil?.nome.split(" ")[0]}</div>
+              <div className="truncate text-[10.5px] font-semibold text-ink/45">{perfil ? NIVEIS[perfil.nivel].rotulo : ""}</div>
+            </div>
+            <button onClick={() => setSenhaAberta(true)} title="Alterar senha" aria-label="Alterar senha" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><KeyRound size={16} /></button>
+            <button onClick={sair} title="Sair" aria-label="Sair" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><LogOut size={16} /></button>
           </div>
           <button onClick={alternarTela} title={tela ? "Sair da tela cheia" : "Tela cheia"} aria-label="Tela cheia"
             className="grid h-11 w-11 place-items-center rounded-xl bg-field text-brand shadow-sm transition hover:bg-soft">
@@ -148,8 +159,8 @@ export default function Shell() {
         </main>
 
         <nav className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 flex h-16 items-center justify-around rounded-3xl bg-vinho-950 px-2 text-white shadow-2xl lg:hidden">
-          {ITENS.map(it => (
-            <NavLink key={it.to} to={it.to} end={it.fim} className={({ isActive }) => clsx("grid h-12 w-12 place-items-center rounded-2xl", isActive ? "bg-white/15" : "text-white/55")}>
+          {itens.map(it => (
+            <NavLink key={it.to} to={it.to} end={it.fim} className={({ isActive }) => clsx("grid h-12 flex-1 place-items-center rounded-2xl", isActive ? "bg-white/15" : "text-white/55")}>
               <it.icone size={21} />
             </NavLink>
           ))}

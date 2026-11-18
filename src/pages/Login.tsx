@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { motion, useAnimationControls } from "motion/react";
 import { ArrowRight, CalendarCheck2, WifiOff } from "lucide-react";
-import { CountUp, Logo, TemaToggle } from "../components/ui";
+import { CampoSenha, CountUp, Logo, TemaToggle } from "../components/ui";
 import BuscaNome from "../components/BuscaNome";
 import { validarAdmin } from "../lib/admin";
-import { useAuth } from "../store/auth";
+import { podeAcessar, useAuth, type Perfil } from "../store/auth";
+import { loginChapa, loginUsuario, RpcAusente, usuariosPublicos } from "../lib/remote";
+import { kvGet, kvSet } from "../lib/db";
 import { todosRegistros, useData } from "../store/data";
 import { agora } from "../lib/dates";
 import type { Colab } from "../lib/types";
@@ -65,27 +67,62 @@ const DIAS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 export default function Login({ modo = "registrar" }: { modo?: "registrar" | "relatorio" }) {
   const entrar = useAuth(s => s.entrar);
-  const entrarAdm = useAuth(s => s.entrarAdm);
+  const garantirColab = useData(s => s.garantirColab);
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const { historico, remotos, locais, colabs, pronto } = useData();
   const total = useMemo(() => todosRegistros({ historico, remotos, locais }).filter(r => r.d.startsWith(String(new Date().getFullYear()))).length, [historico, remotos, locais]);
   const lideres = useMemo(() => colabs.filter(c => c.l === 1 && c.s === "A"), [colabs]);
+  const [publicos, setPublicos] = useState<Colab[] | null>(null);
+  const [legado, setLegado] = useState(false); // servidor de usuários ainda não instalado
   const [sel, setSel] = useState<Colab | null>(null);
   const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
   const tremer = useAnimationControls();
   const hoje = agora();
 
+  // nomes do autocomplete do registro: usuários ativos do servidor (ou, sem o servidor de usuários, as lideranças do cadastro)
+  useEffect(() => {
+    if (modo !== "registrar") return;
+    const paraColab = (u: { chapa: number; nome: string; funcao: string | null; base: string | null }): Colab => {
+      const p = u.nome.split(" ")[0] ?? u.nome;
+      return { c: u.chapa, n: p[0] + p.slice(1).toLowerCase(), nome: u.nome, f: u.funcao ?? "", p: "", b: u.base ?? "", g: "", gr: "", s: "A", ger: "", l: 1 };
+    };
+    usuariosPublicos().then(l => { setPublicos(l.map(paraColab)); void kvSet("usuarios-publicos", l); })
+      .catch(async e => {
+        if (e instanceof RpcAusente) { setLegado(true); return; }
+        const c = await kvGet<Parameters<typeof paraColab>[0][]>("usuarios-publicos");
+        if (c) setPublicos(c.map(paraColab));
+      });
+  }, [modo]);
+
+  const falhar = (msg: string) => { setErro(msg); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); };
+
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
-    if (modo === "relatorio") {
-      const u = await validarAdmin(usuario, senha);
-      if (u) entrarAdm(u);
-      else { setErro("Usuário ou senha incorretos."); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); }
-      return;
-    }
-    if (!sel) { setErro("Escolha seu nome na lista."); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); return; }
-    entrar(sel.c);
+    setEnviando(true); setErro("");
+    try {
+      let perfil: Perfil;
+      if (modo === "relatorio") {
+        try { perfil = (await loginUsuario(usuario, senha)) as Perfil; }
+        catch (err) {
+          if (!(err instanceof RpcAusente)) throw err;
+          const u = await validarAdmin(usuario, senha); // enquanto o cadastro de usuários não está no banco
+          if (!u) throw new Error("Usuário ou senha incorretos.");
+          perfil = { usuario: u, nome: "Marcus Vinicius Silva Queiros", chapa: 12375, nivel: "admin", legado: true };
+        }
+        if (!podeAcessar(perfil.nivel, "consulta")) throw new Error("Seu usuário não tem acesso ao relatório.");
+        entrar(perfil, senha);
+      } else {
+        if (!sel) throw new Error("Escolha seu nome na lista.");
+        if (legado) perfil = { usuario: String(sel.c), nome: sel.nome, chapa: sel.c, funcao: sel.f, base: sel.b, processo: sel.p, gerencia: sel.g, nivel: "observador", legado: true };
+        else perfil = (await loginChapa(sel.c, senha)) as Perfil;
+        entrar(perfil, legado ? "" : senha);
+      }
+      garantirColab(perfil);
+    } catch (err) {
+      falhar(err instanceof TypeError ? "Sem conexão com o servidor. O login precisa de internet." : (err as Error).message);
+    } finally { setEnviando(false); }
   };
 
   return (
@@ -146,7 +183,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
           <Logo branco className="mb-10 hidden h-14 w-auto dark:block" />
           <div className="eyebrow mb-2">{modo === "relatorio" ? "Acesso ao relatório" : "Acesso do observador"}</div>
           <h2 className="display text-[34px] leading-[1.08] text-brand">{modo === "relatorio" ? "Acompanhe os números." : "Quem está em campo hoje?"}</h2>
-          <p className="mt-3 text-[14.5px] font-medium text-ink/55">{modo === "relatorio" ? "Entre com seu usuário e senha." : "Digite seu nome e escolha na lista para começar."}</p>
+          <p className="mt-3 text-[14.5px] font-medium text-ink/55">{modo === "relatorio" ? "Entre com seu usuário e senha." : "Escolha seu nome na lista e digite sua senha."}</p>
 
           <motion.div animate={tremer} className="mt-8">
             {modo === "relatorio" ? (
@@ -155,20 +192,25 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
                   <input className="campo !h-14 !rounded-2xl" autoFocus autoComplete="username" autoCapitalize="none" placeholder="@usuario" value={usuario} onChange={e => { setUsuario(e.target.value); setErro(""); }} />
                 </label>
                 <label className="block"><span className="eyebrow mb-2 block">Senha</span>
-                  <input className="campo !h-14 !rounded-2xl" type="password" autoComplete="current-password" placeholder="••••••" value={senha} onChange={e => { setSenha(e.target.value); setErro(""); }} />
+                  <CampoSenha className="!h-14 !rounded-2xl" valor={senha} onChange={v => { setSenha(v); setErro(""); }} autoComplete="current-password" placeholder="••••••" />
                 </label>
                 <div className="min-h-[24px]">{erro && <div role="alert" className="px-1 text-[13px] font-bold text-vinho-500">{erro}</div>}</div>
               </div>
             ) : (
               <>
-                <BuscaNome opcoes={lideres} sel={sel} onSel={c => { setSel(c); setErro(""); }} aviso="Nome não encontrado. Só lideranças lançam; fale com o SESMT." />
-                {erro && !sel && <div role="alert" className="-mt-9 px-1 text-[13px] font-bold text-vinho-500">{erro}</div>}
+                <BuscaNome opcoes={legado ? lideres : (publicos ?? [])} sel={sel} onSel={c => { setSel(c); setErro(""); }} aviso="Nome não encontrado. Fale com o SESMT para liberar seu acesso." />
+                {!legado && (
+                  <label className="mt-1 block"><span className="eyebrow mb-2 block">Senha</span>
+                    <CampoSenha className="!h-14 !rounded-2xl" valor={senha} onChange={v => { setSenha(v); setErro(""); }} autoComplete="current-password" placeholder="••••••" />
+                  </label>
+                )}
+                <div className="min-h-[28px] pt-2">{erro && <div role="alert" className="px-1 text-[13px] font-bold text-vinho-500">{erro}</div>}</div>
               </>
             )}
           </motion.div>
 
-          <button className="btn btn-vinho group mt-3 !h-14 w-full text-[15.5px]" disabled={!pronto || (modo === "relatorio" && (!usuario || !senha))}>
-            {pronto ? (modo === "relatorio" ? "Abrir relatório" : "Entrar") : "Carregando…"}
+          <button className="btn btn-vinho group mt-3 !h-14 w-full text-[15.5px]" disabled={!pronto || enviando || (modo === "relatorio" ? !usuario || !senha : !sel || (!legado && !senha))}>
+            {!pronto ? "Carregando…" : enviando ? "Verificando…" : modo === "relatorio" ? "Abrir relatório" : "Entrar"}
             <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
           </button>
 

@@ -1,25 +1,59 @@
 import { create } from "zustand";
 
-interface AuthState {
+export type Nivel = "admin" | "gestor" | "consulta" | "observador";
+
+export interface Perfil {
+  usuario: string;
+  nome: string;
   chapa: number | null;
-  /** usuário do relatório (administrador) */
-  adm: string | null;
-  entrarAdm: (u: string) => void;
-  sairAdm: () => void;
-  entrar: (c: number) => void;
+  funcao?: string | null;
+  base?: string | null;
+  processo?: string | null;
+  gerencia?: string | null;
+  nivel: Nivel;
+  /** sessão aberta sem o servidor de usuários (antes de instalar supabase/usuarios.sql) */
+  legado?: boolean;
+}
+
+export const NIVEIS: Record<Nivel, { rotulo: string; texto: string }> = {
+  admin: { rotulo: "Administrador", texto: "Acesso total: relatório, configurações, banco de dados (com exclusão) e usuários." },
+  gestor: { rotulo: "Gestor", texto: "Relatório, configurações e banco de dados (somente leitura). Não gerencia usuários nem exclui registros." },
+  consulta: { rotulo: "Consulta", texto: "Relatório: painel, insights, colaboradores e equipes. Sem configurações nem banco de dados." },
+  observador: { rotulo: "Observador", texto: "Apenas o registro de ações em campo. Não abre o relatório." },
+};
+const RANK: Record<Nivel, number> = { observador: 0, consulta: 1, gestor: 2, admin: 3 };
+export const podeAcessar = (nivel: Nivel | undefined, minimo: Nivel) => !!nivel && RANK[nivel] >= RANK[minimo];
+
+const CHAVE = "dsa:sessao";
+const ler = (): Perfil | null => {
+  try {
+    for (const k of ["dsa:adm", "dsa:chapa"]) localStorage.removeItem(k); // sessões da versão anterior
+    const j = JSON.parse(localStorage.getItem(CHAVE) ?? "null") as Perfil | null;
+    return j && j.usuario && j.nivel in RANK ? j : null;
+  } catch { return null; }
+};
+
+/** A senha fica só na memória (some ao recarregar): é usada para confirmar ações de administrador. */
+let senhaEmMemoria = "";
+export const senhaAtual = () => senhaEmMemoria;
+export const lembrarSenha = (s: string) => { senhaEmMemoria = s; };
+
+interface AuthState {
+  perfil: Perfil | null;
+  entrar: (p: Perfil, senha?: string) => void;
   sair: () => void;
 }
 
-const lerAdm = () => { try { return localStorage.getItem("dsa:adm"); } catch { return null; } };
-const ler = () => {
-  try { return Number(localStorage.getItem("dsa:chapa")) || null; } catch { return null; }
-};
-
 export const useAuth = create<AuthState>(set => ({
-  chapa: ler(),
-  adm: lerAdm(),
-  entrarAdm: u => { try { localStorage.setItem("dsa:adm", u); } catch { /* sem storage */ } set({ adm: u }); },
-  sairAdm: () => { try { localStorage.removeItem("dsa:adm"); } catch { /* sem storage */ } set({ adm: null }); },
-  entrar: c => { try { localStorage.setItem("dsa:chapa", String(c)); } catch { /* sem storage */ } set({ chapa: c }); },
-  sair: () => { try { localStorage.removeItem("dsa:chapa"); } catch { /* sem storage */ } set({ chapa: null }); },
+  perfil: ler(),
+  entrar: (p, senha = "") => {
+    try { localStorage.setItem(CHAVE, JSON.stringify(p)); } catch { /* sem storage */ }
+    senhaEmMemoria = senha;
+    set({ perfil: p });
+  },
+  sair: () => {
+    try { localStorage.removeItem(CHAVE); } catch { /* sem storage */ }
+    senhaEmMemoria = "";
+    set({ perfil: null });
+  },
 }));

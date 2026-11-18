@@ -15,3 +15,8 @@ supabase/historico/
 .vercel
 .env*
 supabase/exclusao-senha.sql
+
+# planilhas (contêm dados pessoais e senhas)
+*.xlsx
+*.xls
+supabase/usuarios-seed.sql

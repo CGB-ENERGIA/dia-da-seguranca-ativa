@@ -119,3 +119,32 @@ export async function excluirRegistros(usuario: string, senha: string, ids: stri
   try { const j = await res.json(); msg = j.code === "PGRST202" ? "Função de exclusão não instalada no banco (rode supabase/exclusao.sql)." : (j.message ?? msg); } catch { /* sem corpo */ }
   throw new Error(msg);
 }
+
+/* ——— usuários e acesso (funções do banco; tudo conferido no servidor) ——— */
+export class RpcAusente extends Error {}
+export interface PerfilRemoto {
+  usuario: string; nome: string; chapa: number | null; funcao: string | null; base: string | null;
+  processo: string | null; gerencia: string | null; nivel: "admin" | "gestor" | "consulta" | "observador"; ativo?: boolean;
+}
+
+async function rpc<T>(nome: string, corpo: object): Promise<T> {
+  const res = await fetch(`${BASE}/rest/v1/rpc/${nome}`, { method: "POST", headers: { ...H(), "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+  if (res.ok) return (await res.json()) as T;
+  let j: { code?: string; message?: string } = {};
+  try { j = await res.json(); } catch { /* sem corpo */ }
+  if (j.code === "PGRST202" || res.status === 404) throw new RpcAusente("Funções de usuários não instaladas no banco (rode supabase/usuarios.sql).");
+  throw new Error(j.message ?? `erro ${res.status}`);
+}
+export const loginUsuario = (usuario: string, senha: string) => rpc<PerfilRemoto>("dsa_login", { p_usuario: usuario, p_senha: senha });
+export const loginChapa = (chapa: number, senha: string) => rpc<PerfilRemoto>("dsa_login_chapa", { p_chapa: chapa, p_senha: senha });
+export const usuariosPublicos = () => rpc<{ chapa: number; nome: string; funcao: string | null; base: string | null }[]>("dsa_usuarios_publicos", {});
+export const alterarSenha = (usuario: string, atual: string, nova: string) => rpc<boolean>("dsa_alterar_senha", { p_usuario: usuario, p_senha_atual: atual, p_senha_nova: nova });
+export const usuariosListar = (admin: string, senha: string) => rpc<PerfilRemoto[]>("dsa_usuarios_listar", { p_admin: admin, p_senha: senha });
+export const usuarioExcluir = (admin: string, senha: string, usuario: string) => rpc<boolean>("dsa_usuario_excluir", { p_admin: admin, p_senha: senha, p_usuario: usuario });
+export const usuarioSalvar = (admin: string, senha: string, d: {
+  anterior: string | null; usuario: string; nome: string; chapa: number | null; funcao: string; base: string; processo: string; gerencia: string;
+  nivel: string; ativo: boolean; novaSenha: string;
+}) => rpc<PerfilRemoto>("dsa_usuario_salvar", {
+  p_admin: admin, p_senha: senha, p_usuario: d.usuario, p_anterior: d.anterior, p_nome: d.nome, p_chapa: d.chapa, p_funcao: d.funcao || null,
+  p_base: d.base || null, p_processo: d.processo || null, p_gerencia: d.gerencia || null, p_nivel: d.nivel, p_ativo: d.ativo, p_nova_senha: d.novaSenha || null,
+});

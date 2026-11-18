@@ -1,6 +1,9 @@
+import { useState } from "react";
+import { AnimatePresence } from "motion/react";
 import { NavLink, Outlet } from "react-router-dom";
+import AlterarSenha from "./AlterarSenha";
 import { clsx } from "clsx";
-import { Camera, CloudOff, FileClock, LogOut, RefreshCw } from "lucide-react";
+import { Camera, CloudOff, FileClock, KeyRound, LogOut, RefreshCw } from "lucide-react";
 import { Logo, TemaToggle } from "./ui";
 import { useAuth } from "../store/auth";
 import { useData } from "../store/data";
@@ -9,7 +12,9 @@ import { agora } from "../lib/dates";
 
 /** Moldura enxuta da tela de registro (link dos observadores). */
 export default function RegistrarShell() {
-  const { chapa, sair } = useAuth();
+  const { perfil, sair } = useAuth();
+  const chapa = perfil?.chapa ?? null;
+  const [senhaAberta, setSenhaAberta] = useState(false);
   const colab = useData(s => (chapa ? s.mapa.get(chapa) : undefined));
   const { pendentes, online, sincronizando } = useSync();
   const quarta = agora().weekday === 3;
@@ -42,6 +47,7 @@ export default function RegistrarShell() {
         <div className="flex items-center gap-2 rounded-xl bg-field py-1.5 pl-1.5 pr-1.5 shadow-sm">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-vinho-700 text-[12px] font-extrabold text-white">{colab?.nome.slice(0, 2) ?? "··"}</div>
           <span className="hidden max-w-[140px] truncate text-[13px] font-bold lg:block">{colab?.n}</span>
+          <button onClick={() => setSenhaAberta(true)} title="Alterar senha" aria-label="Alterar senha" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><KeyRound size={16} /></button>
           <button onClick={sair} title="Sair" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><LogOut size={16} /></button>
         </div>
       </header>
@@ -55,6 +61,7 @@ export default function RegistrarShell() {
           </NavLink>
         ))}
       </nav>
+      <AnimatePresence>{senhaAberta && <AlterarSenha onFechar={() => setSenhaAberta(false)} />}</AnimatePresence>
     </div>
   );
 }

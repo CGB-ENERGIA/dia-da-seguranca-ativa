@@ -11,7 +11,8 @@
     "sql:colabs": "bun scripts/gerar-sql-colaboradores.ts",
     "sql:historico": "bun scripts/gerar-sql-historico.ts",
     "seed:prod": "bun scripts/seed-producao.ts",
-    "sql:admin": "bun scripts/gerar-sql-admin.ts"
+    "sql:admin": "bun scripts/gerar-sql-admin.ts",
+    "sql:usuarios": "bun scripts/gerar-sql-usuarios.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",

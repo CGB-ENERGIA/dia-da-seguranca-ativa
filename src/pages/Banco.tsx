@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
 import { Camera, ChevronLeft, ChevronRight, Download, ExternalLink, ImageOff, LayoutGrid, List, LoaderCircle, MapPin, Search, Trash2, X } from "lucide-react";
-import { Card, Select, Vazio } from "../components/ui";
+import { Card, CampoSenha, Select, Vazio } from "../components/ui";
 import { useData } from "../store/data";
 import { useAuth } from "../store/auth";
 import { ACAO_CURTA, brData } from "../lib/dates";
@@ -41,7 +41,7 @@ function Foto({ path, largura, className, alt = "", eager, inteira }: { path: st
 }
 
 function ModalExcluir({ ids, onFechar, onOk }: { ids: string[]; onFechar: () => void; onOk: (n: number) => void }) {
-  const adm = useAuth(s => s.adm);
+  const adm = useAuth(s => s.perfil?.usuario);
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -60,7 +60,7 @@ function ModalExcluir({ ids, onFechar, onOk }: { ids: string[]; onFechar: () => 
           Isso não pode ser desfeito pelo aplicativo. Os dados apagados ficam guardados numa trilha de auditoria no banco. As fotos continuam no armazenamento.
         </p>
         <label className="mt-5 block"><span className="eyebrow mb-1.5 block">Senha do administrador ({adm})</span>
-          <input autoFocus type="password" autoComplete="current-password" className="campo" value={senha} onChange={e => { setSenha(e.target.value); setErro(""); }} onKeyDown={e => e.key === "Enter" && senha && !enviando && void confirmar()} />
+          <CampoSenha autoFocus autoComplete="current-password" valor={senha} onChange={v => { setSenha(v); setErro(""); }} onKeyDown={e => e.key === "Enter" && senha && !enviando && void confirmar()} />
         </label>
         {erro && <div role="alert" className="mt-3 text-[13px] font-bold text-vinho-500">{erro}</div>}
         <div className="mt-5 flex gap-3">
@@ -72,7 +72,7 @@ function ModalExcluir({ ids, onFechar, onOk }: { ids: string[]; onFechar: () => 
   );
 }
 
-function Detalhe({ r, nome, onFechar, onExcluir }: { r: Reg; nome: string; onFechar: () => void; onExcluir: () => void }) {
+function Detalhe({ r, nome, onFechar, onExcluir }: { r: Reg; nome: string; onFechar: () => void; onExcluir?: () => void }) {
   const baixar = async () => {
     if (!r.foto) return;
     const u = await fotoUrl(r.foto);
@@ -105,7 +105,7 @@ function Detalhe({ r, nome, onFechar, onExcluir }: { r: Reg; nome: string; onFec
             {r.lat != null && r.lon != null && (
               <a className="btn btn-claro" target="_blank" rel="noreferrer" href={`https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lon}#map=18/${r.lat}/${r.lon}`}><MapPin size={17} /> Ver no mapa <ExternalLink size={14} /></a>
             )}
-            <button className="btn btn-vinho ml-auto" onClick={onExcluir}><Trash2 size={17} /> Excluir</button>
+            {onExcluir && <button className="btn btn-vinho ml-auto" onClick={onExcluir}><Trash2 size={17} /> Excluir</button>}
           </div>
         </div>
       </motion.aside>
@@ -127,6 +127,7 @@ export default function Banco() {
   const [aberto, setAberto] = useState<Reg | null>(null);
   const [excluir, setExcluir] = useState<string[] | null>(null);
   const [aviso, setAviso] = useState("");
+  const podeExcluir = useAuth(s => s.perfil?.nivel === "admin");
 
   const nomeDe = (c: number) => mapa.get(c)?.nome ?? `Matrícula ${c}`;
   const lista = useMemo(() => {
@@ -198,13 +199,13 @@ export default function Banco() {
           <div className="rolagem mt-4 overflow-x-auto rounded-2xl border border-ink/8">
             <table className="w-full min-w-[820px] border-collapse">
               <thead className="bg-card"><tr className="text-left text-[10.5px] font-bold uppercase tracking-[0.1em] text-ink/45">
-                <th className="w-10 px-3 py-3"><input type="checkbox" checked={todosSel} onChange={() => setSel(s => { const n = new Set(s); itens.forEach(r => todosSel ? n.delete(r.id) : n.add(r.id)); return n; })} className="accent-[#9c2a42]" aria-label="Selecionar página" /></th>
+                <th className="w-10 px-3 py-3">{podeExcluir && <input type="checkbox" checked={todosSel} onChange={() => setSel(s => { const n = new Set(s); itens.forEach(r => todosSel ? n.delete(r.id) : n.add(r.id)); return n; })} className="accent-[#9c2a42]" aria-label="Selecionar página" />}</th>
                 <th className="px-3 py-3">Data</th><th className="px-3 py-3">Colaborador</th><th className="px-3 py-3">Equipe</th><th className="px-3 py-3">Ação</th><th className="px-3 py-3">Local</th><th className="px-3 py-3">Evidência</th><th className="px-3 py-3">Origem</th>
               </tr></thead>
               <tbody>
                 {itens.map(r => (
                   <tr key={r.id} onClick={() => setAberto(r)} className={clsx("cursor-pointer border-t border-ink/6 text-[13px] transition hover:bg-soft", sel.has(r.id) && "bg-soft")}>
-                    <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}><input type="checkbox" checked={sel.has(r.id)} onChange={() => alternar(r.id)} className="accent-[#9c2a42]" aria-label="Selecionar" /></td>
+                    <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>{podeExcluir && <input type="checkbox" checked={sel.has(r.id)} onChange={() => alternar(r.id)} className="accent-[#9c2a42]" aria-label="Selecionar" />}</td>
                     <td className="num whitespace-nowrap px-3 py-2.5 font-semibold">{brData(r.d)} <span className="text-ink/40">{r.t}</span></td>
                     <td className="px-3 py-2.5"><div className="font-bold text-brand">{nomeDe(r.chapa)}</div><div className="font-mono text-[11px] text-ink/40">{r.chapa}</div></td>
                     <td className="px-3 py-2.5 font-mono text-[12px] font-bold">{r.equipe}</td>
@@ -242,7 +243,7 @@ export default function Banco() {
       </Card>
 
       <AnimatePresence>
-        {aberto && !excluir && <Detalhe key="d" r={aberto} nome={nomeDe(aberto.chapa)} onFechar={() => setAberto(null)} onExcluir={() => setExcluir([aberto.id])} />}
+        {aberto && !excluir && <Detalhe key="d" r={aberto} nome={nomeDe(aberto.chapa)} onFechar={() => setAberto(null)} onExcluir={podeExcluir ? () => setExcluir([aberto.id]) : undefined} />}
         {excluir && <ModalExcluir key="e" ids={excluir} onFechar={() => setExcluir(null)} onOk={n => void aposExcluir(n)} />}
       </AnimatePresence>
     </>

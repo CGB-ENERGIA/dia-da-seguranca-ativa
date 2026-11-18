@@ -57,7 +57,7 @@ function Bloqueado() {
 }
 
 export default function Lancar() {
-  const chapa = useAuth(s => s.chapa);
+  const chapa = useAuth(s => s.perfil?.chapa ?? null);
   const colab = useData(s => (chapa ? s.mapa.get(chapa) : undefined));
   const equipes = useData(s => s.equipes);
   // hora do servidor quando há internet (o relógio do aparelho pode ser mudado pelo usuário)

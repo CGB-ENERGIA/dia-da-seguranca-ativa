@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import Shell from "./components/Shell";
 import RegistrarShell from "./components/RegistrarShell";
@@ -10,9 +10,11 @@ import Equipes from "./pages/Equipes";
 import Config from "./pages/Config";
 import Insights from "./pages/Insights";
 import Banco from "./pages/Banco";
+import Usuarios from "./pages/Usuarios";
+import { Card, Vazio } from "./components/ui";
 import Lancar from "./pages/Lancar";
 import Meus from "./pages/Meus";
-import { useAuth } from "./store/auth";
+import { podeAcessar, useAuth, type Nivel } from "./store/auth";
 import { useData } from "./store/data";
 import { iniciarSync } from "./lib/sync";
 
@@ -59,24 +61,29 @@ function AvisoVersao() {
 }
 
 function Registrar() {
-  const chapa = useAuth(s => s.chapa);
-  return chapa ? <RegistrarShell /> : <Login />;
+  const perfil = useAuth(s => s.perfil);
+  return perfil ? <RegistrarShell /> : <Login />;
 }
 
 function Relatorio() {
-  const adm = useAuth(s => s.adm);
-  return adm ? <Shell /> : <Login modo="relatorio" />;
+  const perfil = useAuth(s => s.perfil);
+  return perfil && podeAcessar(perfil.nivel, "consulta") ? <Shell /> : <Login modo="relatorio" />;
+}
+
+/** Barra a rota se o nível do usuário não alcança o mínimo (o servidor confere de novo nas ações sensíveis). */
+function Exige({ min, children }: { min: Nivel; children: ReactNode }) {
+  const nivel = useAuth(s => s.perfil?.nivel);
+  return podeAcessar(nivel, min) ? <>{children}</> : <Card><Vazio texto="Seu nível de acesso não permite abrir esta área." /></Card>;
 }
 
 export default function App() {
-  const chapa = useAuth(s => s.chapa);
-  const sair = useAuth(s => s.sair);
-  const { pronto, erro, erroMsg, mapa, carregar } = useData();
+  const perfil = useAuth(s => s.perfil);
+  const { pronto, erro, erroMsg, carregar, garantirColab } = useData();
 
   useEffect(() => { void carregar(); iniciarSync(); }, [carregar]);
   useEffect(() => { if (pronto) (window as unknown as { __dsa_ok: boolean }).__dsa_ok = true; }, [pronto]);
-  // nome salvo que não existe mais no cadastro
-  useEffect(() => { if (pronto && chapa && !mapa.has(chapa)) sair(); }, [pronto, chapa, mapa, sair]);
+  // quem entrou e não está no cadastro de colaboradores (ex.: analista) ganha um registro local para assinar a foto
+  useEffect(() => { if (pronto && perfil) garantirColab(perfil); }, [pronto, perfil, garantirColab]);
 
   if (erro) return <FalhaCarga msg={erroMsg} />;
   if (!pronto) return <div className="grid h-full place-items-center bg-canvas"><div className="esqueleto h-16 w-64" /></div>;
@@ -93,10 +100,11 @@ export default function App() {
         <Route path="relatorio" element={<Relatorio />}>
           <Route index element={<Painel />} />
           <Route path="insights" element={<Insights />} />
-          <Route path="banco" element={<Banco />} />
+          <Route path="banco" element={<Exige min="gestor"><Banco /></Exige>} />
+          <Route path="usuarios" element={<Exige min="admin"><Usuarios /></Exige>} />
           <Route path="colaboradores" element={<Colaboradores />} />
           <Route path="equipes" element={<Equipes />} />
-          <Route path="config" element={<Config />} />
+          <Route path="config" element={<Exige min="gestor"><Config /></Exige>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

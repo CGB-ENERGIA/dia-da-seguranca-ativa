@@ -38,3 +38,7 @@ bun run dev
 - **Só em quarta-feira**, pela hora do **servidor** (o relógio do aparelho não vale quando há internet); sem liberação manual.
 - Localização obrigatória; equipe só do cadastro (sem digitar prefixo livre).
 - O banco repete as regras (`supabase/regras-quarta.sql`): quarta-feira, sem data futura, no máximo 4 dias de atraso, foto e local obrigatórios, e a chave pública só insere com `origem = 'app'`.
+
+## Usuários e níveis de acesso
+Login conferido no servidor (senha só como hash bcrypt): `supabase/usuarios.sql` (tabelas e funções) e `bun run sql:usuarios "planilha.xlsx" "@Admin"` (gera `supabase/usuarios-seed.sql`, ignorado pelo git).
+Níveis: **admin** (tudo + usuários + exclusão), **gestor** (relatório, configurações, banco de dados em leitura), **consulta** (relatório), **observador** (só registro). Gerenciados na aba *Usuários* do relatório.

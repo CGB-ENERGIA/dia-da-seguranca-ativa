@@ -1,7 +1,7 @@
 import { animate, useInView, useMotionValue, useTransform, motion } from "motion/react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import { clsx } from "clsx";
-import { ChevronDown, Moon, Sun } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, Moon, Sun } from "lucide-react";
 import { useTema } from "../store/tema";
 
 const BASE = import.meta.env.BASE_URL;
@@ -97,5 +97,20 @@ export function TemaToggle({ escuro }: { escuro?: boolean }) {
         {noEscuro ? <Sun size={19} /> : <Moon size={19} />}
       </motion.span>
     </button>
+  );
+}
+
+/** Campo de senha com botão para mostrar/ocultar. */
+export function CampoSenha({ valor, onChange, className, ...resto }: { valor: string; onChange: (v: string) => void; className?: string } &
+  Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "type" | "className">) {
+  const [ver, setVer] = useState(false);
+  return (
+    <div className="relative">
+      <input {...resto} type={ver ? "text" : "password"} value={valor} onChange={e => onChange(e.target.value)} className={clsx("campo !pr-12", className)} />
+      <button type="button" onClick={() => setVer(v => !v)} aria-label={ver ? "Ocultar senha" : "Mostrar senha"} aria-pressed={ver} title={ver ? "Ocultar senha" : "Mostrar senha"}
+        className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-xl text-ink/45 transition hover:bg-soft hover:text-brand">
+        {ver ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
   );
 }
