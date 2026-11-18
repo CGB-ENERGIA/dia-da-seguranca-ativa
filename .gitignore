@@ -14,3 +14,4 @@ supabase/historico/
 
 .vercel
 .env*
+supabase/exclusao-senha.sql

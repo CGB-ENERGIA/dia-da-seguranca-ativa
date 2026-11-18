@@ -34,6 +34,7 @@ interface DataState {
   salvarEquipe: (e: Equipe) => Promise<void>;
   setMeta: (n: number) => Promise<void>;
   setMetaColab: (chapa: number, n: number | null) => Promise<void>;
+  removerRemotos: (ids: string[]) => Promise<void>;
 }
 
 let baixando = false;
@@ -132,6 +133,12 @@ export const useData = create<DataState>((set, get) => {
     },
     salvarColab: c => persistir({ ...get().edicoes, colabs: { ...get().edicoes.colabs, [c.c]: c } }),
     salvarEquipe: e => persistir({ ...get().edicoes, equipes: { ...get().edicoes.equipes, [e.p]: e } }),
+    removerRemotos: async ids => {
+      const fora = new Set(ids);
+      const restantes = get().remotos.filter(x => !fora.has(x.id));
+      set({ remotos: restantes });
+      await kvSet("remotos", restantes);
+    },
     setMeta: n => persistir({ ...get().edicoes, meta: Math.max(0, n) }),
     setMetaColab: (chapa, n) => {
       const metas = { ...get().edicoes.metas };

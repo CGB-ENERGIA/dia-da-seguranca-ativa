@@ -51,14 +51,14 @@ export async function enviarReg(r: Reg, foto?: Blob) {
 export async function baixarRegs(): Promise<Reg[]> {
   const out: Reg[] = [];
   for (let from = 0; ; from += 1000) {
-    const res = await fetch(`${BASE}/rest/v1/dsa_registros?select=id,chapa,equipe,acao,data,hora,lat,lon,local&order=data.asc`, {
+    const res = await fetch(`${BASE}/rest/v1/dsa_registros?select=id,chapa,equipe,acao,data,hora,lat,lon,local,foto_path,origem,criado_em&order=data.asc`, {
       headers: { ...H(), Range: `${from}-${from + 999}` },
     });
     if (!res.ok) throw new Error(`leitura ${res.status}`);
     const rows = (await res.json()) as any[];
     for (const x of rows)
       out.push({ id: x.id, d: x.data, t: String(x.hora).slice(0, 5), chapa: x.chapa, equipe: x.equipe,
-        acao: Math.max(0, ACOES.indexOf(x.acao)), origem: "app", sync: "synced", lat: x.lat, lon: x.lon, local: x.local });
+        acao: Math.max(0, ACOES.indexOf(x.acao)), origem: "app", sync: "synced", lat: x.lat, lon: x.lon, local: x.local, foto: x.foto_path ?? undefined, orig: x.origem, criado: x.criado_em });
     if (rows.length < 1000) break;
   }
   return out;
@@ -89,4 +89,33 @@ export async function lerColaboradoresRemotos(): Promise<Partial<import("./types
     c: Number(x.chapa), nome: String(x.nome), n: x.nome_curto || undefined, f: x.funcao ?? "", b: x.base ?? "", p: x.processo ?? "",
     g: x.gerencia ?? "", gr: x.grupo ?? "", ger: x.gerente ?? "", s: /DESLIG|INATIV/i.test(x.situacao ?? "") ? "D" : "A", l: x.lider ? 1 : 0,
   })) as Partial<import("./types").Colab>[];
+}
+
+/* ——— evidências (fotos) e exclusão — usadas pela aba Banco de dados ——— */
+const cacheFotos = new Map<string, string>();
+/** Baixa a foto (bucket privado) e devolve uma URL local. Miniatura pelo redimensionador do Storage quando disponível. */
+export async function fotoUrl(path: string, largura?: number): Promise<string> {
+  const chave = `${path}|${largura ?? 0}`;
+  const c = cacheFotos.get(chave);
+  if (c) return c;
+  const tentar = async (u: string) => { const res = await fetch(u, { headers: H() }); return res.ok ? URL.createObjectURL(await res.blob()) : null; };
+  let url: string | null = null;
+  if (largura) url = await tentar(`${BASE}/storage/v1/render/image/authenticated/dsa-evidencias/${path}?width=${largura}&quality=70`).catch(() => null);
+  url ??= await tentar(`${BASE}/storage/v1/object/dsa-evidencias/${path}`);
+  if (!url) throw new Error("foto indisponível");
+  cacheFotos.set(chave, url);
+  return url;
+}
+
+/** Exclui registros pela função do banco, que confere usuário/senha de administrador no servidor. */
+export async function excluirRegistros(usuario: string, senha: string, ids: string[]): Promise<number> {
+  const res = await fetch(`${BASE}/rest/v1/rpc/dsa_excluir_registros`, {
+    method: "POST",
+    headers: { ...H(), "Content-Type": "application/json" },
+    body: JSON.stringify({ p_usuario: usuario, p_senha: senha, p_ids: ids }),
+  });
+  if (res.ok) return Number(await res.json());
+  let msg = `erro ${res.status}`;
+  try { const j = await res.json(); msg = j.code === "PGRST202" ? "Função de exclusão não instalada no banco (rode supabase/exclusao.sql)." : (j.message ?? msg); } catch { /* sem corpo */ }
+  throw new Error(msg);
 }

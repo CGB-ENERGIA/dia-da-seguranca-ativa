@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
-import { ChevronsLeft, LayoutDashboard, Sparkles, Maximize, Menu, Minimize, Settings2, UsersRound, Waypoints, X, Camera } from "lucide-react";
+import { ChevronsLeft, Database, LayoutDashboard, Sparkles, Maximize, Menu, Minimize, Settings2, UsersRound, Waypoints, X, Camera } from "lucide-react";
 import { Logo, TemaToggle } from "./ui";
 import { LogOut } from "lucide-react";
 import { useAuth } from "../store/auth";
@@ -12,11 +12,13 @@ const ITENS = [
   { to: "/relatorio/colaboradores", rot: "Colaboradores", icone: UsersRound },
   { to: "/relatorio/equipes", rot: "Equipes", icone: Waypoints },
   { to: "/relatorio/insights", rot: "Insights", icone: Sparkles },
+  { to: "/relatorio/banco", rot: "Banco de dados", icone: Database },
   { to: "/relatorio/config", rot: "Configurações", icone: Settings2 },
 ];
 const TITULOS: Record<string, [string, string]> = {
   "/relatorio": ["Visão geral", "Painel de Ações"],
   "/relatorio/insights": ["Gestão", "Insights"],
+  "/relatorio/banco": ["Gestão", "Banco de dados"],
   "/relatorio/colaboradores": ["Desempenho", "Colaboradores"],
   "/relatorio/equipes": ["Cobertura", "Equipes visitadas"],
   "/relatorio/config": ["Gestão", "Configurações"],
@@ -147,7 +149,7 @@ export default function Shell() {
 
         <nav className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 flex h-16 items-center justify-around rounded-3xl bg-vinho-950 px-2 text-white shadow-2xl lg:hidden">
           {ITENS.map(it => (
-            <NavLink key={it.to} to={it.to} end={it.fim} className={({ isActive }) => clsx("grid h-12 w-14 place-items-center rounded-2xl", isActive ? "bg-white/15" : "text-white/55")}>
+            <NavLink key={it.to} to={it.to} end={it.fim} className={({ isActive }) => clsx("grid h-12 w-12 place-items-center rounded-2xl", isActive ? "bg-white/15" : "text-white/55")}>
               <it.icone size={21} />
             </NavLink>
           ))}
