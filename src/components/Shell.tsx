@@ -9,9 +9,9 @@ import { useAuth } from "../store/auth";
 
 const ITENS = [
   { to: "/relatorio", rot: "Painel de Ações", icone: LayoutDashboard, fim: true },
-  { to: "/relatorio/insights", rot: "Insights", icone: Sparkles },
   { to: "/relatorio/colaboradores", rot: "Colaboradores", icone: UsersRound },
   { to: "/relatorio/equipes", rot: "Equipes", icone: Waypoints },
+  { to: "/relatorio/insights", rot: "Insights", icone: Sparkles },
   { to: "/relatorio/config", rot: "Configurações", icone: Settings2 },
 ];
 const TITULOS: Record<string, [string, string]> = {
