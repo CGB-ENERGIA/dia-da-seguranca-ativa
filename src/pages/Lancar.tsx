@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
 import {
-  Camera, Check, Download, FileClock, LoaderCircle, LockKeyhole, MapPin, MapPinOff,
+  Camera, Check, Download, FileClock, LoaderCircle, SwitchCamera, LockKeyhole, MapPin, MapPinOff,
   RefreshCcw, Search, Siren, ClipboardCheck, GraduationCap, Truck, Wrench, HardHat, X,
 } from "lucide-react";
 import { useAuth } from "../store/auth";
@@ -72,6 +72,8 @@ export default function Lancar() {
   const [buscandoLocal, setBuscandoLocal] = useState(true);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [lado, setLado] = useState<"environment" | "user">("environment"); // traseira ou frontal
+  const [varias, setVarias] = useState(false); // o aparelho tem mais de uma câmera
   const [camErro, setCamErro] = useState("");
   const [foto, setFoto] = useState<{ blob: Blob; url: string } | null>(null);
   const [processando, setProcessando] = useState(false);
@@ -99,15 +101,21 @@ export default function Lancar() {
   }, [stream]);
   useEffect(() => () => stream?.getTracks().forEach(t => t.stop()), [stream]);
 
-  const abrirCamera = async () => {
+  const abrirCamera = async (modo: "environment" | "user" = lado) => {
     setCamErro("");
     if (!navigator.mediaDevices?.getUserMedia) { setCamErro("Este navegador não permite abrir a câmera. Use o Chrome (Android) ou o Safari (iPhone) atualizado."); return; }
+    stream?.getTracks().forEach(t => t.stop()); // libera a câmera atual antes de abrir a outra
     try {
-      setStream(await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }));
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: modo }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      setStream(s);
+      setLado(modo);
+      // depois da permissão o navegador informa quantas câmeras existem
+      navigator.mediaDevices.enumerateDevices().then(d => setVarias(d.filter(x => x.kind === "videoinput").length > 1)).catch(() => setVarias(false));
     } catch {
       setCamErro("Não consegui abrir a câmera. Permita o acesso à câmera nas configurações do navegador e tente de novo.");
     }
   };
+  const alternarCamera = () => abrirCamera(lado === "environment" ? "user" : "environment");
   const fecharCamera = () => { stream?.getTracks().forEach(t => t.stop()); setStream(null); };
 
   const sugestoes = useMemo(() => {
@@ -299,12 +307,13 @@ export default function Lancar() {
                   <img src={foto.url} alt="Pré-visualização carimbada" className="h-full w-full object-contain" />
                 ) : stream ? (
                   <>
-                    <video ref={video} playsInline muted autoPlay className="h-full w-full object-cover" onLoadedMetadata={e => { const v = e.currentTarget; if (v.videoWidth) setAr(v.videoWidth / v.videoHeight); }} />
+                    <video ref={video} playsInline muted autoPlay className="h-full w-full object-cover" style={{ transform: lado === "user" ? "scaleX(-1)" : undefined }} onLoadedMetadata={e => { const v = e.currentTarget; if (v.videoWidth) setAr(v.videoWidth / v.videoHeight); }} />
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-vinho-950/90 via-vinho-950/60 to-transparent p-4 pt-12 text-white">
                       <div className="flex items-baseline gap-3"><span className="num text-[26px] font-bold">{hora}</span><span className="text-[12px] capitalize text-white/80">{diaSemanaExtenso(relogio)}, {brData(hoje.d)}</span></div>
                       <div className="mt-1 text-[12px] font-semibold">Observador: {colab.n} · {colab.c}</div>
                       <div className="truncate text-[11.5px] text-white/75">{local?.label ?? "Localização indisponível"}</div>
                     </div>
+                    {varias && <button onClick={() => void alternarCamera()} aria-label="Virar câmera (frontal/traseira)" className="absolute left-3 top-3 flex h-9 items-center gap-2 rounded-full bg-ink/40 px-3.5 text-[12.5px] font-bold text-white backdrop-blur"><SwitchCamera size={16} /> {lado === "environment" ? "Frontal" : "Traseira"}</button>}
                     <button onClick={fecharCamera} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-ink/40 text-white backdrop-blur"><X size={17} /></button>
                   </>
                 ) : (
