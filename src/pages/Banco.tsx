@@ -36,7 +36,7 @@ function Foto({ path, largura, className, alt = "", eager, inteira }: { path: st
   }, [path, largura, eager]);
   return (
     <div ref={ref} className={clsx("grid place-items-center overflow-hidden bg-ink/5", className)}>
-      {url ? <img src={url} alt={alt} className={clsx("h-full w-full", inteira ? "object-contain" : "object-cover")} /> : erro ? <ImageOff size={20} className="text-ink/30" /> : <LoaderCircle size={18} className="animate-spin text-ink/30" />}
+      {url ? <img src={url} alt={alt} className={inteira ? "block h-auto max-h-[72dvh] w-full object-contain" : "h-full w-full object-cover"} /> : erro ? <ImageOff size={20} className="text-ink/30" /> : <LoaderCircle size={18} className="animate-spin text-ink/30" />}
     </div>
   );
 }
@@ -99,7 +99,7 @@ function Detalhe({ r, nome, onFechar, onExcluir }: { r: Reg; nome: string; onFec
         </header>
         <div className="rolagem flex-1 space-y-5 overflow-y-auto p-6">
           {fotos.length
-            ? <Foto key={fotos[idx]} path={fotos[idx]} eager inteira className="aspect-[4/3] w-full rounded-2xl bg-black/80" alt="Evidência" />
+            ? <Foto key={fotos[idx]} path={fotos[idx]} eager inteira className="min-h-[200px] w-full rounded-2xl bg-black/80" alt="Evidência" />
             : <div className="grid aspect-[4/3] w-full place-items-center rounded-2xl bg-ink/5 text-center text-[13px] font-semibold text-ink/40"><div><ImageOff className="mx-auto mb-2" />Sem evidência (registro histórico)</div></div>}
           {fotos.length > 1 && (
             <ul className="flex gap-2.5 overflow-x-auto pb-1">
