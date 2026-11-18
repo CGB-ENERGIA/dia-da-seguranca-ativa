@@ -32,3 +32,9 @@ bun run dev
 ## Dois links
 - `/#/registrar` — observadores: login por nome, lançar ação com foto, meus lançamentos.
 - `/#/relatorio` — painel, colaboradores, equipes e **Configurações** (usuário e senha).
+
+## Antifraude do registro
+- Foto **somente pela câmera ao vivo** (sem galeria/arquivo); carimbo com data/hora, local e observador.
+- **Só em quarta-feira**, pela hora do **servidor** (o relógio do aparelho não vale quando há internet); sem liberação manual.
+- Localização obrigatória; equipe só do cadastro (sem digitar prefixo livre).
+- O banco repete as regras (`supabase/regras-quarta.sql`): quarta-feira, sem data futura, no máximo 4 dias de atraso, foto e local obrigatórios, e a chave pública só insere com `origem = 'app'`.

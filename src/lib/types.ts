@@ -18,7 +18,7 @@ export interface Equipe {
   g: string; // gerência
   y: number[]; // anos em que a equipe existe
 }
-export type SyncState = "pending" | "synced" | "error";
+export type SyncState = "pending" | "synced" | "error" | "rejected";
 export interface Reg {
   id: string;
   d: string; // YYYY-MM-DD (hora local de Fortaleza)
@@ -28,6 +28,7 @@ export interface Reg {
   acao: number; // índice em ACOES
   origem: "hist" | "app";
   sync?: SyncState;
+  motivo?: string; // por que o banco recusou o lançamento
   fotoId?: string;
   lat?: number;
   lon?: number;

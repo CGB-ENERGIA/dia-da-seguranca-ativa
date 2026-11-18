@@ -12,6 +12,9 @@ export const remotoAtivo = Boolean(BASE && KEY);
 
 const H = () => ({ apikey: KEY!, Authorization: `Bearer ${KEY}` });
 
+/** Recusa definitiva do banco (regra de negócio ou permissão): não adianta tentar de novo. */
+export class RegistroRecusado extends Error {}
+
 export async function enviarReg(r: Reg, foto?: Blob) {
   let foto_path: string | null = null;
   if (foto && r.fotoId) {
@@ -23,15 +26,26 @@ export async function enviarReg(r: Reg, foto?: Blob) {
     });
     if (!up.ok) throw new Error(`upload ${up.status}`);
   }
-  const res = await fetch(`${BASE}/rest/v1/dsa_registros?on_conflict=id`, {
+  const corpo = {
+    id: r.id, chapa: r.chapa, equipe: r.equipe, acao: ACOES[r.acao],
+    data: r.d, hora: r.t, lat: r.lat ?? null, lon: r.lon ?? null, local: r.local ?? null, foto_path,
+  };
+  const enviar = (c: object) => fetch(`${BASE}/rest/v1/dsa_registros?on_conflict=id`, {
     method: "POST",
     headers: { ...H(), "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
-    body: JSON.stringify({
-      id: r.id, chapa: r.chapa, equipe: r.equipe, acao: ACOES[r.acao],
-      data: r.d, hora: r.t, lat: r.lat ?? null, lon: r.lon ?? null, local: r.local ?? null, foto_path,
-    }),
+    body: JSON.stringify(c),
   });
-  if (!res.ok) throw new Error(`registro ${res.status}`);
+  let res = await enviar({ ...corpo, origem: "app" });
+  if (res.status === 400) {
+    const txt = await res.clone().text();
+    if (/origem/i.test(txt) && /(column|coluna)/i.test(txt)) res = await enviar(corpo); // banco ainda sem as regras de quarta-feira
+  }
+  if (!res.ok) {
+    let msg = `registro ${res.status}`, code = "";
+    try { const j = await res.json(); msg = j.message ?? msg; code = j.code ?? ""; } catch { /* sem corpo */ }
+    if (code === "P0001" || code === "42501") throw new RegistroRecusado(msg);
+    throw new Error(msg);
+  }
 }
 
 export async function baixarRegs(): Promise<Reg[]> {

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { lerFoto, regsLocais, salvarReg } from "./db";
-import { enviarReg, remotoAtivo } from "./remote";
+import { enviarReg, RegistroRecusado, remotoAtivo } from "./remote";
 import { useData } from "../store/data";
 
 interface SyncStore { pendentes: number; sincronizando: boolean; online: boolean }
@@ -8,7 +8,7 @@ export const useSync = create<SyncStore>(() => ({ pendentes: 0, sincronizando: f
 
 let rodando = false;
 export async function contarPendentes() {
-  const n = (await regsLocais()).filter(r => r.sync !== "synced").length;
+  const n = (await regsLocais()).filter(r => r.sync !== "synced" && r.sync !== "rejected").length;
   useSync.setState({ pendentes: n });
 }
 
@@ -19,14 +19,15 @@ export async function sincronizar() {
   try {
     if (remotoAtivo && navigator.onLine) {
       useSync.setState({ sincronizando: true });
-      const fila = (await regsLocais()).filter(x => x.sync !== "synced");
+      const fila = (await regsLocais()).filter(x => x.sync !== "synced" && x.sync !== "rejected");
       for (const r of fila) {
         try {
           const f = r.fotoId ? await lerFoto(r.fotoId) : undefined;
           await enviarReg(r, f?.blob);
           await salvarReg({ ...r, sync: "synced" });
-        } catch {
-          await salvarReg({ ...r, sync: "error" });
+        } catch (e) {
+          if (e instanceof RegistroRecusado) await salvarReg({ ...r, sync: "rejected", motivo: e.message });
+          else await salvarReg({ ...r, sync: "error" });
         }
       }
       await useData.getState().recarregarLocais();

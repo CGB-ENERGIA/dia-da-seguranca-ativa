@@ -59,12 +59,12 @@ export default function Meus() {
                     <span className="text-[14.5px] font-extrabold text-brand">{ACAO_CURTA[r.acao]}</span>
                     <span className="font-mono text-[12.5px] font-bold text-ink/50">{r.equipe}</span>
                   </div>
-                  <div className="mt-0.5 truncate text-[12px] font-semibold text-ink/45">{brData(r.d)} · {r.t}{r.local ? ` · ${r.local}` : ""}</div>
+                  <div className="mt-0.5 truncate text-[12px] font-semibold text-ink/45">{r.sync === "rejected" && r.motivo ? `Recusado: ${r.motivo} · ` : ""}{brData(r.d)} · {r.t}{r.local ? ` · ${r.local}` : ""}</div>
                 </div>
                 <span className={clsx("hidden items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-extrabold sm:flex",
-                  r.sync === "synced" ? "bg-oliva/15 text-oliva" : r.sync === "error" ? "bg-soft2 text-brand" : "bg-ambar/25 text-[#7a5200]")}>
-                  {r.sync === "synced" ? <CheckCircle2 size={13} /> : r.sync === "error" ? <TriangleAlert size={13} /> : <CloudUpload size={13} />}
-                  {r.sync === "synced" ? "enviado" : r.sync === "error" ? "falhou, tentando" : "na fila"}
+                  r.sync === "synced" ? "bg-oliva/15 text-oliva" : r.sync === "error" || r.sync === "rejected" ? "bg-soft2 text-brand" : "bg-ambar/25 text-[#7a5200]")}>
+                  {r.sync === "synced" ? <CheckCircle2 size={13} /> : (r.sync === "error" || r.sync === "rejected") ? <TriangleAlert size={13} /> : <CloudUpload size={13} />}
+                  {r.sync === "synced" ? "enviado" : r.sync === "rejected" ? "recusado" : r.sync === "error" ? "falhou, tentando" : "na fila"}
                 </span>
                 {r.fotoId && <button onClick={() => void baixarFoto(r)} title="Baixar foto" className="grid h-10 w-10 place-items-center rounded-xl text-brand hover:bg-soft"><Download size={18} /></button>}
                 {r.sync !== "synced" && <button onClick={() => void remover(r)} title="Excluir" className="grid h-10 w-10 place-items-center rounded-xl text-ink/35 hover:bg-soft hover:text-brand"><Trash2 size={17} /></button>}

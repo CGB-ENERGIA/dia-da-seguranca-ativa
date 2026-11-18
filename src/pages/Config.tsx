@@ -5,7 +5,6 @@ import { Check, CircleDashed, Minus, Pencil, Plus, RefreshCw, Search, ShieldChec
 import { Card, CountUp, Select } from "../components/ui";
 import BuscaNome from "../components/BuscaNome";
 import { useData } from "../store/data";
-import { useAuth } from "../store/auth";
 import { useDados } from "../store/derivados";
 import { filtrosIniciais, porColaborador, visitas } from "../lib/analytics";
 import { agora } from "../lib/dates";
@@ -56,7 +55,6 @@ export default function Config() {
   const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, historico } = useData();
   const { linhas } = useDados();
   const { pendentes, online, sincronizando } = useSync();
-  const { liberarDia, setLiberar } = useAuth();
   const [aba, setAba] = useState<Aba>("meta");
   const [ano, setAno] = useState(+agora().d.slice(0, 4));
   const [q, setQ] = useState("");
@@ -284,7 +282,6 @@ export default function Config() {
             </ul>
             <div className="mt-5 flex flex-wrap items-center gap-4">
               <button className="btn btn-vinho !h-11" onClick={() => void sincronizar()} disabled={sincronizando}><RefreshCw size={16} className={sincronizando ? "animate-spin" : ""} /> Sincronizar</button>
-              <label className="flex cursor-pointer items-center gap-2 text-[13px] font-bold"><input type="checkbox" checked={liberarDia} onChange={e => setLiberar(e.target.checked)} className="accent-[#9c2a42]" /> Liberar lançamento fora da quarta</label>
             </div>
           </Card>
         </div>

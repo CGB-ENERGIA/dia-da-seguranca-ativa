@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
 import {
-  Camera, Check, Download, FileClock, ImagePlus, LoaderCircle, LockKeyhole, MapPin, MapPinOff,
-  RefreshCcw, Search, Siren, ShieldCheck, ClipboardCheck, GraduationCap, Truck, Wrench, HardHat, X,
+  Camera, Check, Download, FileClock, LoaderCircle, LockKeyhole, MapPin, MapPinOff,
+  RefreshCcw, Search, Siren, ClipboardCheck, GraduationCap, Truck, Wrench, HardHat, X,
 } from "lucide-react";
 import { useAuth } from "../store/auth";
 import { useData } from "../store/data";
@@ -14,6 +14,7 @@ import { carimbar } from "../lib/stamp";
 import { salvarFoto, salvarReg } from "../lib/db";
 import { contarPendentes, sincronizar } from "../lib/sync";
 import { remotoAtivo } from "../lib/remote";
+import { agoraConfiavel, carregarRelogio, sincronizarRelogio } from "../lib/relogio";
 import type { Reg } from "../lib/types";
 
 const ICONES = [Siren, ClipboardCheck, Wrench, HardHat, Truck, GraduationCap];
@@ -29,8 +30,8 @@ export function baixar(blob: Blob, nome: string) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-function Bloqueado({ liberar }: { liberar?: () => void }) {
-  const p = proximaQuarta();
+function Bloqueado() {
+  const p = proximaQuarta(agoraConfiavel());
   return (
     <div className="mx-auto mt-6 max-w-[620px]">
       <div className="card relative overflow-hidden p-8 text-center sm:p-12">
@@ -41,7 +42,7 @@ function Bloqueado({ liberar }: { liberar?: () => void }) {
         </motion.div>
         <h2 className="display text-[40px] leading-none text-brand">Hoje não é quarta-feira</h2>
         <p className="mx-auto mt-4 max-w-[420px] text-[15px] font-medium leading-relaxed text-ink/55">
-          O Dia da Segurança Ativa acontece <b className="text-brand">todas as quartas-feiras</b>. Hoje é {diaSemanaExtenso()} — os lançamentos reabrem em
+          O Dia da Segurança Ativa acontece <b className="text-brand">todas as quartas-feiras</b>. Hoje é {diaSemanaExtenso(agoraConfiavel())} — os lançamentos reabrem em
         </p>
         <div className="mt-6 inline-flex items-baseline gap-2 rounded-2xl bg-soft px-6 py-3">
           <span className="display text-[44px] leading-none text-brand">{p.dias}</span>
@@ -49,7 +50,6 @@ function Bloqueado({ liberar }: { liberar?: () => void }) {
         </div>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link to="/registrar/meus" className="btn btn-claro"><FileClock size={18} /> Meus lançamentos</Link>
-          {liberar && <button onClick={liberar} className="btn btn-vinho"><ShieldCheck size={18} /> Liberar (SESMT)</button>}
         </div>
       </div>
     </div>
@@ -57,12 +57,13 @@ function Bloqueado({ liberar }: { liberar?: () => void }) {
 }
 
 export default function Lancar() {
-  const { chapa, liberarDia, setLiberar } = useAuth();
+  const chapa = useAuth(s => s.chapa);
   const colab = useData(s => (chapa ? s.mapa.get(chapa) : undefined));
   const equipes = useData(s => s.equipes);
-  const hoje = agora();
+  // hora do servidor quando há internet (o relógio do aparelho pode ser mudado pelo usuário)
+  const [relogio, setRelogio] = useState(() => agoraConfiavel());
+  const hoje = agora(relogio);
   const quarta = hoje.weekday === 3;
-  const gestor = colab?.gr === "SEGURANÇA";
 
   const [busca, setBusca] = useState("");
   const [equipe, setEquipe] = useState("");
@@ -77,8 +78,7 @@ export default function Lancar() {
   const [salvo, setSalvo] = useState<{ ok: boolean; nome: string; qtd: number } | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [ar, setAr] = useState(4 / 3);
-  const arquivo = useRef<HTMLInputElement>(null);
-  const [relogio, setRelogio] = useState(new Date());
+  const [captura, setCaptura] = useState<Date | null>(null);
 
   const pegarLocal = useCallback(async () => {
     setBuscandoLocal(true);
@@ -86,7 +86,12 @@ export default function Lancar() {
     setBuscandoLocal(false);
   }, []);
   useEffect(() => { void pegarLocal(); }, [pegarLocal]);
-  useEffect(() => { const i = setInterval(() => setRelogio(new Date()), 1000); return () => clearInterval(i); }, []);
+  useEffect(() => { const i = setInterval(() => setRelogio(agoraConfiavel()), 1000); return () => clearInterval(i); }, []);
+  useEffect(() => {
+    void carregarRelogio().then(() => sincronizarRelogio()).then(() => setRelogio(agoraConfiavel()));
+    const i = setInterval(() => void sincronizarRelogio(), 120000);
+    return () => clearInterval(i);
+  }, []);
 
   useEffect(() => {
     if (video.current && stream) { video.current.srcObject = stream; void video.current.play().catch(() => {}); }
@@ -96,11 +101,11 @@ export default function Lancar() {
 
   const abrirCamera = async () => {
     setCamErro("");
-    if (!navigator.mediaDevices?.getUserMedia) { arquivo.current?.click(); return; }
+    if (!navigator.mediaDevices?.getUserMedia) { setCamErro("Este navegador não permite abrir a câmera. Use o Chrome (Android) ou o Safari (iPhone) atualizado."); return; }
     try {
       setStream(await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }));
     } catch {
-      setCamErro("Não consegui abrir a câmera. Permita o acesso ou use a câmera do aparelho.");
+      setCamErro("Não consegui abrir a câmera. Permita o acesso à câmera nas configurações do navegador e tente de novo.");
     }
   };
   const fecharCamera = () => { stream?.getTracks().forEach(t => t.stop()); setStream(null); };
@@ -111,37 +116,42 @@ export default function Lancar() {
     return lista.sort((a, b) => Number(b.b === colab?.b) - Number(a.b === colab?.b) || a.p.localeCompare(b.p)).slice(0, 7);
   }, [busca, equipes, colab, hoje.d]);
 
-  const montar = async (fonte: CanvasImageSource, w: number, h: number) => {
+  const montar = async (fonte: CanvasImageSource, w: number, h: number, quando: Date, l: Local) => {
     if (!colab) return;
     setProcessando(true);
-    const agoraLocal = local;
     const blob = await carimbar(fonte, w, h, {
-      quando: new Date(), nome: colab.n, chapa: colab.c, equipe, acoes,
-      local: agoraLocal?.label ?? "Localização indisponível",
-      coordenadas: agoraLocal ? `${coordTexto(agoraLocal.lat, agoraLocal.lon)} ±${agoraLocal.prec}m` : undefined,
+      quando, nome: colab.n, chapa: colab.c, equipe, acoes,
+      local: l.label,
+      coordenadas: `${coordTexto(l.lat, l.lon)} ±${l.prec}m`,
     });
     setAr(w / h);
+    setCaptura(quando);
     setFoto({ blob, url: URL.createObjectURL(blob) });
     setProcessando(false);
     fecharCamera();
   };
 
+  /** Só a câmera ao vivo gera foto (não há galeria). Exige quarta-feira pela hora do servidor e localização. */
   const capturar = async () => {
     const v = video.current;
     if (!v || !v.videoWidth) return;
-    void pegarLocal();
-    await montar(v, v.videoWidth, v.videoHeight);
-  };
-  const doArquivo = async (f?: File | null) => {
-    if (!f) return;
-    const bmp = await createImageBitmap(f);
-    await montar(bmp, bmp.width, bmp.height);
+    setCamErro("");
+    setProcessando(true);
+    await sincronizarRelogio();
+    const quando = agoraConfiavel();
+    setRelogio(quando);
+    if (agora(quando).weekday !== 3) { setProcessando(false); setCamErro("Hoje não é quarta-feira. Os lançamentos só são aceitos às quartas."); fecharCamera(); return; }
+    let l = local;
+    if (!l) { setBuscandoLocal(true); l = await obterLocal(); setLocal(l); setBuscandoLocal(false); }
+    if (!l) { setProcessando(false); setCamErro("Ative a localização do aparelho para registrar (a foto leva o local carimbado)."); return; }
+    await montar(v, v.videoWidth, v.videoHeight, quando, l);
   };
 
   const salvar = async () => {
     if (!foto || !colab) return;
     setProcessando(true);
-    const a = agora();
+    const a = agora(captura ?? agoraConfiavel()); // vale o momento em que a foto foi tirada
+    if (a.weekday !== 3) { setProcessando(false); setCamErro("A foto não foi tirada numa quarta-feira."); return; }
     const fotoId = novoId();
     const nome = nomeArquivo(colab.c, equipe, a.d, a.t);
     await salvarFoto(fotoId, foto.blob, nome);
@@ -158,12 +168,12 @@ export default function Lancar() {
 
   const novo = () => {
     if (foto) URL.revokeObjectURL(foto.url);
-    setFoto(null); setSalvo(null); setEquipe(""); setBusca(""); setAcoes([]);
+    setFoto(null); setCaptura(null); setSalvo(null); setEquipe(""); setBusca(""); setAcoes([]);
     void pegarLocal();
   };
 
   if (!colab) return null;
-  if (!quarta && !liberarDia) return <Bloqueado liberar={gestor ? () => setLiberar(true) : undefined} />;
+  if (!quarta && !foto && !salvo) return <Bloqueado />;
 
   const passo = salvo ? 4 : foto ? 3 : equipe && acoes.length ? 3 : equipe ? 2 : 1;
   const pronto = equipe && acoes.length > 0;
@@ -171,13 +181,6 @@ export default function Lancar() {
 
   return (
     <div className="mx-auto max-w-[1040px]">
-      {!quarta && liberarDia && (
-        <div className="mb-4 flex items-center gap-2 rounded-2xl bg-ambar/25 px-4 py-3 text-[13px] font-bold text-[#7a5200]">
-          <ShieldCheck size={17} /> Lançamento liberado pelo SESMT fora da quarta-feira.
-          <button className="ml-auto underline" onClick={() => setLiberar(false)}>desfazer</button>
-        </div>
-      )}
-
       {/* progresso */}
       <ol className="mb-6 flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-[0.1em]">
         {["Equipe", "Ação", "Foto", "Pronto"].map((t, i) => (
@@ -254,13 +257,6 @@ export default function Lancar() {
                           </button>
                         </li>
                       ))}
-                      {busca.trim().length > 2 && !equipes.some(e => e.p === busca.trim().toUpperCase()) && (
-                        <li>
-                          <button onClick={() => setEquipe(busca.trim().toUpperCase())} className="w-full rounded-xl border border-dashed border-vinho-400 px-3 py-2.5 text-left text-[13px] font-bold text-brand hover:bg-soft">
-                            Usar “{busca.trim().toUpperCase()}” (equipe fora da lista)
-                          </button>
-                        </li>
-                      )}
                     </ul>
                   </>
                 )}
@@ -334,12 +330,10 @@ export default function Lancar() {
                 ) : (
                   <>
                     <button className="btn btn-vinho flex-1" disabled={!pronto} onClick={() => void abrirCamera()}><Camera size={19} /> Abrir câmera</button>
-                    <button className="btn btn-claro" disabled={!pronto} onClick={() => arquivo.current?.click()} title="Usar a câmera do aparelho"><ImagePlus size={18} /></button>
                   </>
                 )}
                 {!pronto && !foto && <p className="w-full text-[12px] font-semibold text-ink/40">Escolha a equipe e a ação para liberar a câmera.</p>}
               </div>
-              <input ref={arquivo} type="file" accept="image/*" capture="environment" hidden onChange={e => { void doArquivo(e.target.files?.[0]); e.target.value = ""; }} />
             </div>
           </motion.div>
         )}
