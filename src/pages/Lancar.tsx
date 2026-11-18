@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
 import {
-  Camera, Check, Download, FileClock, LoaderCircle, SwitchCamera, LockKeyhole, MapPin, MapPinOff,
-  RefreshCcw, Search, Siren, ClipboardCheck, GraduationCap, Truck, Wrench, HardHat, X,
+  Camera, Check, Download, FileClock, LoaderCircle, Plus, SwitchCamera, LockKeyhole, MapPin, MapPinOff,
+  Search, Siren, ClipboardCheck, GraduationCap, Truck, Wrench, HardHat, X,
 } from "lucide-react";
 import { useAuth } from "../store/auth";
 import { useData } from "../store/data";
@@ -16,6 +16,9 @@ import { contarPendentes, sincronizar } from "../lib/sync";
 import { remotoAtivo } from "../lib/remote";
 import { agoraConfiavel, carregarRelogio, sincronizarRelogio } from "../lib/relogio";
 import type { Reg } from "../lib/types";
+
+const MAX_FOTOS = 5;
+interface FotoTirada { id: string; blob: Blob; url: string; quando: Date; local: Local }
 
 const ICONES = [Siren, ClipboardCheck, Wrench, HardHat, Truck, GraduationCap];
 
@@ -75,12 +78,12 @@ export default function Lancar() {
   const [lado, setLado] = useState<"environment" | "user">("environment"); // traseira ou frontal
   const [varias, setVarias] = useState(false); // o aparelho tem mais de uma câmera
   const [camErro, setCamErro] = useState("");
-  const [foto, setFoto] = useState<{ blob: Blob; url: string } | null>(null);
+  const [fotos, setFotos] = useState<FotoTirada[]>([]); // de 1 a 5 evidências
+  const [ativa, setAtiva] = useState(0);
   const [processando, setProcessando] = useState(false);
   const [salvo, setSalvo] = useState<{ ok: boolean; nome: string; qtd: number } | null>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [ar, setAr] = useState(4 / 3);
-  const [captura, setCaptura] = useState<Date | null>(null);
 
   const pegarLocal = useCallback(async () => {
     setBuscandoLocal(true);
@@ -133,8 +136,8 @@ export default function Lancar() {
       coordenadas: `${coordTexto(l.lat, l.lon)} ±${l.prec}m`,
     });
     setAr(w / h);
-    setCaptura(quando);
-    setFoto({ blob, url: URL.createObjectURL(blob) });
+    setAtiva(fotos.length);
+    setFotos([...fotos, { id: novoId(), blob, url: URL.createObjectURL(blob), quando, local: l }]);
     setProcessando(false);
     fecharCamera();
   };
@@ -143,6 +146,7 @@ export default function Lancar() {
   const capturar = async () => {
     const v = video.current;
     if (!v || !v.videoWidth) return;
+    if (fotos.length >= MAX_FOTOS) { setCamErro("Limite de 5 fotos por lançamento."); return; }
     setCamErro("");
     setProcessando(true);
     await sincronizarRelogio();
@@ -155,16 +159,27 @@ export default function Lancar() {
     await montar(v, v.videoWidth, v.videoHeight, quando, l);
   };
 
+  const removerFoto = (i: number) => {
+    URL.revokeObjectURL(fotos[i].url);
+    const resto = fotos.filter((_, k) => k !== i);
+    setFotos(resto);
+    setAtiva(Math.max(0, Math.min(ativa, resto.length - 1)));
+  };
+
   const salvar = async () => {
-    if (!foto || !colab) return;
+    if (!fotos.length || !colab) return; // é preciso ao menos 1 evidência
     setProcessando(true);
-    const a = agora(captura ?? agoraConfiavel()); // vale o momento em que a foto foi tirada
+    const primeira = fotos[0];
+    const a = agora(primeira.quando); // vale o momento da primeira foto
     if (a.weekday !== 3) { setProcessando(false); setCamErro("A foto não foi tirada numa quarta-feira."); return; }
-    const fotoId = novoId();
     const nome = nomeArquivo(colab.c, equipe, a.d, a.t);
-    await salvarFoto(fotoId, foto.blob, nome);
+    const ids: string[] = [];
+    for (let i = 0; i < fotos.length; i++) {
+      ids.push(novoId());
+      await salvarFoto(ids[i], fotos[i].blob, nome.replace(".jpg", `_${i + 1}.jpg`));
+    }
     for (const ac of acoes) {
-      const r: Reg = { id: novoId(), d: a.d, t: a.t, chapa: colab.c, equipe, acao: ac, origem: "app", sync: "pending", fotoId, lat: local?.lat, lon: local?.lon, local: local?.label };
+      const r: Reg = { id: novoId(), d: a.d, t: a.t, chapa: colab.c, equipe, acao: ac, origem: "app", sync: "pending", fotoId: ids[0], fotoIds: ids, lat: primeira.local.lat, lon: primeira.local.lon, local: primeira.local.label };
       await salvarReg(r);
     }
     await useData.getState().recarregarLocais();
@@ -175,15 +190,19 @@ export default function Lancar() {
   };
 
   const novo = () => {
-    if (foto) URL.revokeObjectURL(foto.url);
-    setFoto(null); setCaptura(null); setSalvo(null); setEquipe(""); setBusca(""); setAcoes([]);
+    fotos.forEach(f => URL.revokeObjectURL(f.url));
+    setFotos([]); setAtiva(0); setSalvo(null); setEquipe(""); setBusca(""); setAcoes([]);
     void pegarLocal();
   };
 
-  if (!colab) return null;
-  if (!quarta && !foto && !salvo) return <Bloqueado />;
+  const baixarTodas = async (nome: string) => {
+    for (let i = 0; i < fotos.length; i++) { baixar(fotos[i].blob, nome.replace(".jpg", `_${i + 1}.jpg`)); await new Promise(ok => setTimeout(ok, 400)); }
+  };
 
-  const passo = salvo ? 4 : foto ? 3 : equipe && acoes.length ? 3 : equipe ? 2 : 1;
+  if (!colab) return null;
+  if (!quarta && !fotos.length && !salvo) return <Bloqueado />;
+
+  const passo = salvo ? 4 : fotos.length ? 3 : equipe && acoes.length ? 3 : equipe ? 2 : 1;
   const pronto = equipe && acoes.length > 0;
   const hora = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Fortaleza", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(relogio);
 
@@ -207,7 +226,8 @@ export default function Lancar() {
           <motion.div key="ok" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} className="card overflow-hidden">
             <div className="grid md:grid-cols-[1fr_1.1fr]">
               <div className="relative bg-vinho-900 p-6">
-                {foto && <img src={foto.url} alt="Foto carimbada" className="w-full rounded-2xl shadow-2xl" />}
+                {fotos[0] && <img src={fotos[0].url} alt="Foto carimbada" className="w-full rounded-2xl shadow-2xl" />}
+                {fotos.length > 1 && <ul className="mt-3 flex gap-2">{fotos.slice(1).map(f => <li key={f.id}><img src={f.url} alt="" className="h-14 w-20 rounded-lg object-cover ring-1 ring-white/20" /></li>)}</ul>}
               </div>
               <div className="flex flex-col justify-center p-8">
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 260, damping: 14, delay: 0.1 }}
@@ -218,7 +238,7 @@ export default function Lancar() {
                     ? "Enviando para o servidor…" : "Sem sinal agora: está guardado no aparelho e será enviado automaticamente quando a rede voltar."}
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
-                  <button className="btn btn-vinho" onClick={() => foto && baixar(foto.blob, salvo.nome)}><Download size={18} /> Baixar foto</button>
+                  <button className="btn btn-vinho" onClick={() => void baixarTodas(salvo.nome)}><Download size={18} /> Baixar {fotos.length > 1 ? `${fotos.length} fotos` : "foto"}</button>
                   <button className="btn btn-claro" onClick={novo}><Camera size={18} /> Novo lançamento</button>
                 </div>
                 <Link to="/registrar/meus" className="mt-5 text-[13px] font-bold text-brand underline-offset-4 hover:underline">Ver meus lançamentos →</Link>
@@ -242,7 +262,7 @@ export default function Lancar() {
               </div>
 
               {/* equipe */}
-              <div className="card p-5">
+              <div className={clsx("card p-5", fotos.length > 0 && "pointer-events-none opacity-60")}>
                 <div className="eyebrow mb-3">1 · Equipe visitada</div>
                 {equipe ? (
                   <div className="flex items-center gap-3 rounded-2xl bg-soft p-3.5">
@@ -271,7 +291,7 @@ export default function Lancar() {
               </div>
 
               {/* ações */}
-              <div className="card p-5">
+              <div className={clsx("card p-5", fotos.length > 0 && "pointer-events-none opacity-60")}>
                 <div className="eyebrow mb-1">2 · O que você realizou?</div>
                 <p className="mb-3 text-[12px] font-medium text-ink/45">Pode marcar mais de uma: contam como 1 visita e uma ação de cada tipo.</p>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -295,7 +315,7 @@ export default function Lancar() {
             {/* foto */}
             <div className="card flex flex-col overflow-hidden p-0">
               <div className="flex items-center justify-between px-5 pb-3 pt-5">
-                <div className="eyebrow">3 · Foto da evidência</div>
+                <div className="eyebrow">3 · Fotos da evidência (1 a 5)</div>
                 <button onClick={() => void pegarLocal()} className={clsx("flex items-center gap-1.5 rounded-full px-3 py-1 text-[11.5px] font-bold", local ? "bg-oliva/12 text-oliva" : "bg-ink/6 text-ink/50")}>
                   {buscandoLocal ? <LoaderCircle size={13} className="animate-spin" /> : local ? <MapPin size={13} /> : <MapPinOff size={13} />}
                   <span className="max-w-[180px] truncate">{buscandoLocal ? "buscando local…" : local ? local.label : "sem localização · tocar p/ tentar"}</span>
@@ -303,8 +323,8 @@ export default function Lancar() {
               </div>
 
               <div className="relative mx-auto mb-5 max-h-[68dvh] w-[calc(100%-2.5rem)] overflow-hidden rounded-2xl bg-vinho-950" style={{ aspectRatio: ar }}>
-                {foto ? (
-                  <img src={foto.url} alt="Pré-visualização carimbada" className="h-full w-full object-contain" />
+                {!stream && fotos.length ? (
+                  <img src={fotos[ativa]?.url} alt="Pré-visualização carimbada" className="h-full w-full object-contain" />
                 ) : stream ? (
                   <>
                     <video ref={video} playsInline muted autoPlay className="h-full w-full object-cover" style={{ transform: lado === "user" ? "scaleX(-1)" : undefined }} onLoadedMetadata={e => { const v = e.currentTarget; if (v.videoWidth) setAr(v.videoWidth / v.videoHeight); }} />
@@ -326,22 +346,37 @@ export default function Lancar() {
                 )}
                 {processando && <div className="absolute inset-0 grid place-items-center bg-ink/50 backdrop-blur-sm"><LoaderCircle className="animate-spin text-white" size={34} /></div>}
               </div>
+              {fotos.length > 0 && (
+                <div className="mx-5 mb-4">
+                  <div className="mb-2 flex items-center justify-between text-[12px] font-extrabold uppercase tracking-[0.08em] text-ink/50"><span>Evidências</span><span className="num">{fotos.length}/{MAX_FOTOS} · mínimo 1</span></div>
+                  <ul className="flex gap-2.5 overflow-x-auto pb-1.5 pt-1.5">
+                    {fotos.map((f, i) => (
+                      <li key={f.id} className="relative shrink-0">
+                        <button onClick={() => { setAtiva(i); }} aria-label={`Ver foto ${i + 1}`} className={clsx("block h-16 w-[86px] overflow-hidden rounded-xl ring-2 transition", i === ativa && !stream ? "ring-vinho-500" : "ring-transparent")}><img src={f.url} alt="" className="h-full w-full object-cover" /></button>
+                        <button onClick={() => removerFoto(i)} aria-label={`Remover foto ${i + 1}`} className="absolute -right-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-vinho-700 text-white shadow"><X size={13} /></button>
+                      </li>
+                    ))}
+                    {fotos.length < MAX_FOTOS && !stream && (
+                      <li className="shrink-0"><button onClick={() => void abrirCamera()} aria-label="Adicionar foto" className="grid h-16 w-[86px] place-items-center rounded-xl border-2 border-dashed border-ink/20 text-ink/45 transition hover:border-vinho-400 hover:text-brand"><Plus size={20} /></button></li>
+                    )}
+                  </ul>
+                </div>
+              )}
               {camErro && <p className="mx-5 mb-3 text-[12.5px] font-bold text-vinho-600">{camErro}</p>}
 
               <div className="mt-auto flex flex-wrap gap-3 px-5 pb-5">
-                {foto ? (
+                {stream ? (
+                  <button className="btn btn-vinho flex-1 !h-14" onClick={() => void capturar()} disabled={processando}><Camera size={20} /> Tirar foto{fotos.length > 0 ? ` (${fotos.length + 1}/${MAX_FOTOS})` : ""}</button>
+                ) : fotos.length > 0 ? (
                   <>
-                    <button className="btn btn-claro" onClick={() => { URL.revokeObjectURL(foto.url); setFoto(null); void abrirCamera(); }}><RefreshCcw size={17} /> Refazer</button>
-                    <button className="btn btn-vinho flex-1" disabled={!pronto || processando} onClick={() => void salvar()}><Check size={18} strokeWidth={3} /> Salvar lançamento</button>
+                    {fotos.length < MAX_FOTOS && <button className="btn btn-claro" onClick={() => void abrirCamera()}><Plus size={17} /> Adicionar foto</button>}
+                    <button className="btn btn-vinho flex-1" disabled={processando} onClick={() => void salvar()}><Check size={18} strokeWidth={3} /> Salvar lançamento · {fotos.length} {fotos.length === 1 ? "foto" : "fotos"}</button>
                   </>
-                ) : stream ? (
-                  <button className="btn btn-vinho flex-1 !h-14" onClick={() => void capturar()} disabled={processando}><Camera size={20} /> Tirar foto</button>
                 ) : (
-                  <>
-                    <button className="btn btn-vinho flex-1" disabled={!pronto} onClick={() => void abrirCamera()}><Camera size={19} /> Abrir câmera</button>
-                  </>
+                  <button className="btn btn-vinho flex-1" disabled={!pronto} onClick={() => void abrirCamera()}><Camera size={19} /> Abrir câmera</button>
                 )}
-                {!pronto && !foto && <p className="w-full text-[12px] font-semibold text-ink/40">Escolha a equipe e a ação para liberar a câmera.</p>}
+                {!pronto && !fotos.length && <p className="w-full text-[12px] font-semibold text-ink/40">Escolha a equipe e a ação para liberar a câmera.</p>}
+                {pronto && !fotos.length && !stream && <p className="w-full text-[12px] font-semibold text-ink/40">Tire de 1 a 5 fotos. É obrigatório ao menos 1 evidência para finalizar.</p>}
               </div>
             </div>
           </motion.div>

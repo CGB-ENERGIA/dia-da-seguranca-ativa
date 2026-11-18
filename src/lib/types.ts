@@ -28,7 +28,9 @@ export interface Reg {
   acao: number; // índice em ACOES
   origem: "hist" | "app";
   sync?: SyncState;
-  foto?: string; // caminho da evidência no Storage (registros vindos do banco)
+  foto?: string; // 1ª evidência no Storage (registros vindos do banco)
+  fotos?: string[]; // todas as evidências no Storage (até 5)
+  fotoIds?: string[]; // ids locais das fotos (até 5) antes do envio
   criado?: string; // quando o servidor recebeu
   orig?: string; // 'app' | 'historico'
   motivo?: string; // por que o banco recusou o lançamento

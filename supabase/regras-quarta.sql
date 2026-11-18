@@ -9,6 +9,7 @@
 -- Cargas de histórico passam a ser feitas aqui no SQL Editor (que ignora essas regras).
 
 alter table public.dsa_registros add column if not exists origem text not null default 'historico';
+alter table public.dsa_registros add column if not exists fotos text[];   -- todas as evidências do lançamento (a 1ª também fica em foto_path)
 
 create or replace function public.dsa_validar_registro() returns trigger
 language plpgsql as $$
@@ -29,6 +30,9 @@ begin
     end if;
     if new.foto_path is null or new.lat is null or new.lon is null then
       raise exception 'Foto e localização são obrigatórias';
+    end if;
+    if new.fotos is not null and array_length(new.fotos, 1) > 5 then
+      raise exception 'No máximo 5 fotos por lançamento';
     end if;
   end if;
   return new;

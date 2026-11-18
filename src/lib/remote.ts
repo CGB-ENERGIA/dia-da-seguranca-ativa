@@ -15,30 +15,37 @@ const H = () => ({ apikey: KEY!, Authorization: `Bearer ${KEY}` });
 /** Recusa definitiva do banco (regra de negócio ou permissão): não adianta tentar de novo. */
 export class RegistroRecusado extends Error {}
 
-export async function enviarReg(r: Reg, foto?: Blob) {
-  let foto_path: string | null = null;
-  if (foto && r.fotoId) {
-    foto_path = `${r.d}/${r.chapa}-${r.fotoId}.jpg`;
-    const up = await fetch(`${BASE}/storage/v1/object/dsa-evidencias/${foto_path}`, {
+export async function enviarReg(r: Reg, fotos: Blob[] = []) {
+  const ids = r.fotoIds?.length ? r.fotoIds : r.fotoId ? [r.fotoId] : [];
+  const paths: string[] = [];
+  for (let i = 0; i < fotos.length && i < ids.length; i++) {
+    const p = `${r.d}/${r.chapa}-${ids[i]}.jpg`;
+    const up = await fetch(`${BASE}/storage/v1/object/dsa-evidencias/${p}`, {
       method: "POST",
       headers: { ...H(), "Content-Type": "image/jpeg", "x-upsert": "true" },
-      body: foto,
+      body: fotos[i],
     });
     if (!up.ok) throw new Error(`upload ${up.status}`);
+    paths.push(p);
   }
-  const corpo = {
+  const corpo: Record<string, unknown> = {
     id: r.id, chapa: r.chapa, equipe: r.equipe, acao: ACOES[r.acao],
-    data: r.d, hora: r.t, lat: r.lat ?? null, lon: r.lon ?? null, local: r.local ?? null, foto_path,
+    data: r.d, hora: r.t, lat: r.lat ?? null, lon: r.lon ?? null, local: r.local ?? null,
+    foto_path: paths[0] ?? null, fotos: paths.length ? paths : null, origem: "app",
   };
   const enviar = (c: object) => fetch(`${BASE}/rest/v1/dsa_registros?on_conflict=id`, {
     method: "POST",
     headers: { ...H(), "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" },
     body: JSON.stringify(c),
   });
-  let res = await enviar({ ...corpo, origem: "app" });
-  if (res.status === 400) {
+  let res = await enviar(corpo);
+  // compatibilidade: se o banco ainda não tem uma das colunas novas (origem, fotos), reenvia sem ela
+  for (let tentativa = 0; tentativa < 2 && res.status === 400; tentativa++) {
     const txt = await res.clone().text();
-    if (/origem/i.test(txt) && /(column|coluna)/i.test(txt)) res = await enviar(corpo); // banco ainda sem as regras de quarta-feira
+    const campo = /(column|coluna)/i.test(txt) ? (/origem/i.test(txt) ? "origem" : /fotos/i.test(txt) ? "fotos" : null) : null;
+    if (!campo) break;
+    delete corpo[campo];
+    res = await enviar(corpo);
   }
   if (!res.ok) {
     let msg = `registro ${res.status}`, code = "";
@@ -51,14 +58,14 @@ export async function enviarReg(r: Reg, foto?: Blob) {
 export async function baixarRegs(): Promise<Reg[]> {
   const out: Reg[] = [];
   for (let from = 0; ; from += 1000) {
-    const res = await fetch(`${BASE}/rest/v1/dsa_registros?select=id,chapa,equipe,acao,data,hora,lat,lon,local,foto_path,origem,criado_em&order=data.asc`, {
+    const res = await fetch(`${BASE}/rest/v1/dsa_registros?select=id,chapa,equipe,acao,data,hora,lat,lon,local,foto_path,fotos,origem,criado_em&order=data.asc`, {
       headers: { ...H(), Range: `${from}-${from + 999}` },
     });
     if (!res.ok) throw new Error(`leitura ${res.status}`);
     const rows = (await res.json()) as any[];
     for (const x of rows)
       out.push({ id: x.id, d: x.data, t: String(x.hora).slice(0, 5), chapa: x.chapa, equipe: x.equipe,
-        acao: Math.max(0, ACOES.indexOf(x.acao)), origem: "app", sync: "synced", lat: x.lat, lon: x.lon, local: x.local, foto: x.foto_path ?? undefined, orig: x.origem, criado: x.criado_em });
+        acao: Math.max(0, ACOES.indexOf(x.acao)), origem: "app", sync: "synced", lat: x.lat, lon: x.lon, local: x.local, foto: x.foto_path ?? undefined, fotos: x.fotos ?? (x.foto_path ? [x.foto_path] : undefined), orig: x.origem, criado: x.criado_em });
     if (rows.length < 1000) break;
   }
   return out;

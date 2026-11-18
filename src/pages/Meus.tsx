@@ -35,7 +35,8 @@ export default function Meus() {
   const remover = async (r: Reg) => {
     if (!confirm("Excluir este lançamento ainda não enviado?")) return;
     await apagarReg(r.id);
-    if (r.fotoId && !locais.some(x => x.fotoId === r.fotoId && x.id !== r.id)) await apagarFoto(r.fotoId);
+    for (const id of r.fotoIds?.length ? r.fotoIds : r.fotoId ? [r.fotoId] : [])
+      if (!locais.some(x => x.id !== r.id && (x.fotoIds ?? (x.fotoId ? [x.fotoId] : [])).includes(id))) await apagarFoto(id);
     await recarregarLocais();
     await contarPendentes();
   };
@@ -53,7 +54,7 @@ export default function Meus() {
           <ul className="divide-y divide-ink/6">
             {meus.map(r => (
               <li key={r.id} className="flex items-center gap-4 py-3.5">
-                <Miniatura id={r.fotoId} />
+                <div className="relative"><Miniatura id={r.fotoId} />{(r.fotoIds?.length ?? 0) > 1 && <span className="absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-vinho-700 px-1 text-[10.5px] font-extrabold text-white">{r.fotoIds!.length}</span>}</div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[14.5px] font-extrabold text-brand">{ACAO_CURTA[r.acao]}</span>

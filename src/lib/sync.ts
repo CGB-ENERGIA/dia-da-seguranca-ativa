@@ -22,8 +22,10 @@ export async function sincronizar() {
       const fila = (await regsLocais()).filter(x => x.sync !== "synced" && x.sync !== "rejected");
       for (const r of fila) {
         try {
-          const f = r.fotoId ? await lerFoto(r.fotoId) : undefined;
-          await enviarReg(r, f?.blob);
+          const ids = r.fotoIds?.length ? r.fotoIds : r.fotoId ? [r.fotoId] : [];
+          const blobs: Blob[] = [];
+          for (const id of ids) { const f = await lerFoto(id); if (f) blobs.push(f.blob); }
+          await enviarReg(r, blobs);
           await salvarReg({ ...r, sync: "synced" });
         } catch (e) {
           if (e instanceof RegistroRecusado) await salvarReg({ ...r, sync: "rejected", motivo: e.message });

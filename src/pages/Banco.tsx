@@ -12,6 +12,7 @@ import type { Reg } from "../lib/types";
 const POR_PAGINA = 40;
 const POR_PAGINA_GALERIA = 12;
 /** Registro feito pelo aplicativo (tem foto ao vivo), mesmo que tenha sido gravado antes da coluna de origem existir. */
+const caminhos = (r: Reg): string[] => (r.fotos?.length ? r.fotos : r.foto ? [r.foto] : []);
 const ehApp = (r: Reg) => r.orig === "app" || !!r.foto;
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -73,14 +74,17 @@ function ModalExcluir({ ids, onFechar, onOk }: { ids: string[]; onFechar: () => 
 }
 
 function Detalhe({ r, nome, onFechar, onExcluir }: { r: Reg; nome: string; onFechar: () => void; onExcluir?: () => void }) {
+  const fotos = caminhos(r);
+  const [idx, setIdx] = useState(0);
   const baixar = async () => {
-    if (!r.foto) return;
-    const u = await fotoUrl(r.foto);
-    const a = document.createElement("a"); a.href = u; a.download = `DSA_${r.chapa}_${r.d}_${r.t.replace(":", "")}.jpg`; a.click();
+    if (!fotos[idx]) return;
+    const u = await fotoUrl(fotos[idx]);
+    const a = document.createElement("a"); a.href = u; a.download = `DSA_${r.chapa}_${r.d}_${r.t.replace(":", "")}_${idx + 1}.jpg`; a.click();
   };
   const linhas: [string, string][] = [
     ["Colaborador", `${nome} · ${r.chapa}`], ["Ação", ACAO_CURTA[r.acao]], ["Equipe", r.equipe],
     ["Data e hora", `${brData(r.d)} às ${r.t}`], ["Local", r.local ?? "—"],
+    ["Evidências", fotos.length ? `${fotos.length} ${fotos.length === 1 ? "foto" : "fotos"}` : "nenhuma"],
     ["Origem", ehApp(r) ? "Aplicativo (foto ao vivo)" : "Histórico importado"],
     ["Recebido pelo servidor", r.criado ? new Date(r.criado).toLocaleString("pt-BR") : "—"],
   ];
@@ -94,14 +98,21 @@ function Detalhe({ r, nome, onFechar, onExcluir }: { r: Reg; nome: string; onFec
           <button onClick={onFechar} className="grid h-10 w-10 place-items-center rounded-lg hover:bg-soft" aria-label="Fechar"><X size={18} /></button>
         </header>
         <div className="rolagem flex-1 space-y-5 overflow-y-auto p-6">
-          {r.foto
-            ? <Foto path={r.foto} eager inteira className="aspect-[4/3] w-full rounded-2xl bg-black/80" alt="Evidência" />
+          {fotos.length
+            ? <Foto key={fotos[idx]} path={fotos[idx]} eager inteira className="aspect-[4/3] w-full rounded-2xl bg-black/80" alt="Evidência" />
             : <div className="grid aspect-[4/3] w-full place-items-center rounded-2xl bg-ink/5 text-center text-[13px] font-semibold text-ink/40"><div><ImageOff className="mx-auto mb-2" />Sem evidência (registro histórico)</div></div>}
+          {fotos.length > 1 && (
+            <ul className="flex gap-2.5 overflow-x-auto pb-1">
+              {fotos.map((p, i) => (
+                <li key={p} className="shrink-0"><button onClick={() => setIdx(i)} aria-label={`Foto ${i + 1}`} className={clsx("block overflow-hidden rounded-xl ring-2 transition", i === idx ? "ring-vinho-500" : "ring-transparent")}><Foto path={p} largura={200} className="h-16 w-[86px]" /></button></li>
+              ))}
+            </ul>
+          )}
           <dl className="divide-y divide-ink/8 rounded-2xl border border-ink/8">
             {linhas.map(([k, v]) => <div key={k} className="flex justify-between gap-4 px-4 py-3 text-[13.5px]"><dt className="font-semibold text-ink/50">{k}</dt><dd className="text-right font-bold text-brand">{v}</dd></div>)}
           </dl>
           <div className="flex flex-wrap gap-3">
-            {r.foto && <button className="btn btn-claro" onClick={() => void baixar()}><Download size={17} /> Baixar foto</button>}
+            {fotos.length > 0 && <button className="btn btn-claro" onClick={() => void baixar()}><Download size={17} /> Baixar foto</button>}
             {r.lat != null && r.lon != null && (
               <a className="btn btn-claro" target="_blank" rel="noreferrer" href={`https://www.openstreetmap.org/?mlat=${r.lat}&mlon=${r.lon}#map=18/${r.lat}/${r.lon}`}><MapPin size={17} /> Ver no mapa <ExternalLink size={14} /></a>
             )}
@@ -211,7 +222,7 @@ export default function Banco() {
                     <td className="px-3 py-2.5 font-mono text-[12px] font-bold">{r.equipe}</td>
                     <td className="px-3 py-2.5 font-semibold">{ACAO_CURTA[r.acao]}</td>
                     <td className="max-w-[220px] truncate px-3 py-2.5 text-ink/55" title={r.local}>{r.local ?? "—"}</td>
-                    <td className="px-3 py-2.5">{r.foto ? <span className="inline-flex items-center gap-1.5 rounded-full bg-oliva/15 px-2.5 py-1 text-[11.5px] font-extrabold text-oliva"><Camera size={13} /> ver foto</span> : <span className="text-ink/30">—</span>}</td>
+                    <td className="px-3 py-2.5">{r.foto ? <span className="inline-flex items-center gap-1.5 rounded-full bg-oliva/15 px-2.5 py-1 text-[11.5px] font-extrabold text-oliva"><Camera size={13} /> {caminhos(r).length > 1 ? `${caminhos(r).length} fotos` : "ver foto"}</span> : <span className="text-ink/30">—</span>}</td>
                     <td className="px-3 py-2.5"><span className={clsx("rounded-full px-2.5 py-1 text-[11px] font-extrabold", ehApp(r) ? "bg-ambar/20 text-[#8a5d00] dark:text-ambar" : "bg-ink/6 text-ink/50")}>{ehApp(r) ? "app" : "histórico"}</span></td>
                   </tr>
                 ))}
@@ -226,7 +237,7 @@ export default function Banco() {
                 <Foto path={r.foto!} largura={420} className="aspect-[4/3] w-full" alt={`Evidência de ${nomeDe(r.chapa)}`} />
                 <div className="p-3.5"><div className="truncate text-[13.5px] font-extrabold text-brand">{nomeDe(r.chapa)}</div>
                   <div className="mt-0.5 text-[12px] font-semibold text-ink/50">{ACAO_CURTA[r.acao]} · {r.equipe}</div>
-                  <div className="num text-[11.5px] font-semibold text-ink/40">{brData(r.d)} {r.t}</div></div>
+                  <div className="num text-[11.5px] font-semibold text-ink/40">{brData(r.d)} {r.t}{caminhos(r).length > 1 ? ` · ${caminhos(r).length} fotos` : ""}</div></div>
               </button>
             ))}
             {!itens.length && <div className="col-span-full"><Vazio texto="Nenhuma evidência (foto) encontrada. Os registros históricos não têm foto." /></div>}
