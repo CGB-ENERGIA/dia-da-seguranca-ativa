@@ -41,7 +41,7 @@ export default function Usuarios() {
   const carregar = useCallback(async (s: string) => {
     setCarregando(true); setErro("");
     try { setLista(await usuariosListar(perfil.usuario, s)); lembrarSenha(s); setSenhaAdm(s); }
-    catch (e) { setErro((e as Error).message); setSenhaAdm(""); }
+    catch (e) { if (!useAuth.getState().exigirTroca((e as Error).message)) setErro((e as Error).message); setSenhaAdm(""); }
     finally { setCarregando(false); }
   }, [perfil.usuario]);
   useEffect(() => { if (senhaAdm && !lista) void carregar(senhaAdm); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
@@ -190,6 +190,7 @@ export default function Usuarios() {
                   <div className="mb-1.5 flex items-center justify-between"><span className="eyebrow">{form.anterior ? "Nova senha (deixe em branco para manter)" : "Senha"}</span>
                     <button type="button" className="flex items-center gap-1.5 text-[12px] font-bold text-brand underline-offset-2 hover:underline" onClick={() => setForm({ ...form, senha: senhaAleatoria() })}><Dices size={14} /> gerar</button></div>
                   <CampoSenha valor={form.senha} onChange={v => setForm({ ...form, senha: v })} autoComplete="new-password" placeholder="mínimo 6 caracteres" />
+                  <p className="mt-1.5 text-[11.5px] font-medium text-ink/45">Senha provisória: a pessoa será obrigada a criar uma nova no primeiro acesso.</p>
                 </div>
                 {erro && <div role="alert" className="text-[13px] font-bold text-vinho-500">{erro}</div>}
               </div>

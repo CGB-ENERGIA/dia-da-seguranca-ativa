@@ -47,7 +47,7 @@ function ModalExcluir({ ids, onFechar, onOk }: { ids: string[]; onFechar: () => 
   const [enviando, setEnviando] = useState(false);
   const confirmar = async () => {
     setEnviando(true); setErro("");
-    try { onOk(await excluirRegistros(adm ?? "", senha, ids)); } catch (e) { setErro((e as Error).message); setEnviando(false); }
+    try { onOk(await excluirRegistros(adm ?? "", senha, ids)); } catch (e) { if (!useAuth.getState().exigirTroca((e as Error).message)) setErro((e as Error).message); setEnviando(false); }
   };
   return (
     <>

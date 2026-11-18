@@ -11,6 +11,7 @@ import Config from "./pages/Config";
 import Insights from "./pages/Insights";
 import Banco from "./pages/Banco";
 import Usuarios from "./pages/Usuarios";
+import AlterarSenha from "./components/AlterarSenha";
 import { Card, Vazio } from "./components/ui";
 import Lancar from "./pages/Lancar";
 import Meus from "./pages/Meus";
@@ -60,6 +61,12 @@ function AvisoVersao() {
   );
 }
 
+/** Primeiro acesso (ou senha redefinida pelo administrador): bloqueia o uso até definir uma nova senha. */
+function TrocaObrigatoria() {
+  const trocar = useAuth(s => !!s.perfil?.trocarSenha && !s.perfil?.legado);
+  return trocar ? <AlterarSenha obrigatorio onFechar={() => {}} /> : null;
+}
+
 function Registrar() {
   const perfil = useAuth(s => s.perfil);
   return perfil ? <RegistrarShell /> : <Login />;
@@ -91,6 +98,7 @@ export default function App() {
   return (
     <HashRouter>
       <AvisoVersao />
+      <TrocaObrigatoria />
       <Routes>
         <Route index element={<Navigate to="/registrar" replace />} />
         <Route path="registrar" element={<Registrar />}>

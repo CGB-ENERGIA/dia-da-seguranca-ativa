@@ -19,10 +19,12 @@ create table if not exists public.dsa_usuarios (
   gerencia       text,
   nivel          text not null default 'observador' check (nivel in ('admin', 'gestor', 'consulta', 'observador')),
   ativo          boolean not null default true,
+  trocar_senha   boolean not null default true,          -- obriga a redefinir a senha no próximo acesso
   hash           text not null,
   criado_em      timestamptz not null default now(),
   atualizado_em  timestamptz not null default now()
 );
+alter table public.dsa_usuarios add column if not exists trocar_senha boolean not null default true;
 create index if not exists dsa_usuarios_chapa_idx on public.dsa_usuarios (chapa);
 alter table public.dsa_usuarios enable row level security;     -- sem políticas: a chave pública não lê nem grava direto
 revoke all on public.dsa_usuarios from anon, authenticated;
@@ -45,7 +47,7 @@ revoke all on function public.dsa__autenticar(text, text) from public, anon, aut
 create or replace function public.dsa__perfil(u public.dsa_usuarios) returns jsonb
 language sql immutable as $$
   select jsonb_build_object('usuario', u.usuario, 'nome', u.nome, 'chapa', u.chapa, 'funcao', u.funcao,
-                            'base', u.base, 'processo', u.processo, 'gerencia', u.gerencia, 'nivel', u.nivel, 'ativo', u.ativo)
+                            'base', u.base, 'processo', u.processo, 'gerencia', u.gerencia, 'nivel', u.nivel, 'ativo', u.ativo, 'trocar_senha', u.trocar_senha)
 $$;
 revoke all on function public.dsa__perfil(public.dsa_usuarios) from public, anon, authenticated;
 
@@ -55,6 +57,7 @@ language plpgsql security definer set search_path = public, extensions as $$
 declare u public.dsa_usuarios;
 begin
   u := public.dsa__autenticar(p_usuario, p_senha);
+  if u.trocar_senha then raise exception 'Redefina sua senha antes de continuar'; end if;
   if u.nivel <> 'admin' then raise exception 'Acesso restrito ao administrador'; end if;
   return u;
 end $$;
@@ -98,7 +101,8 @@ declare u public.dsa_usuarios;
 begin
   u := public.dsa__autenticar(p_usuario, p_senha_atual);
   if length(coalesce(p_senha_nova, '')) < 6 then raise exception 'A nova senha precisa ter ao menos 6 caracteres'; end if;
-  update public.dsa_usuarios set hash = crypt(p_senha_nova, gen_salt('bf')), atualizado_em = now() where usuario = u.usuario;
+  if p_senha_nova = p_senha_atual then raise exception 'A nova senha deve ser diferente da atual'; end if;
+  update public.dsa_usuarios set hash = crypt(p_senha_nova, gen_salt('bf')), trocar_senha = false, atualizado_em = now() where usuario = u.usuario;
   return true;
 end $$;
 
@@ -132,7 +136,8 @@ begin
     end if;
     update public.dsa_usuarios set usuario = novo, chapa = p_chapa, nome = trim(p_nome), funcao = p_funcao, base = p_base,
       processo = p_processo, gerencia = p_gerencia, nivel = p_nivel, ativo = coalesce(p_ativo, true), atualizado_em = now(),
-      hash = case when coalesce(p_nova_senha, '') <> '' then crypt(p_nova_senha, gen_salt('bf')) else hash end
+      hash = case when coalesce(p_nova_senha, '') <> '' then crypt(p_nova_senha, gen_salt('bf')) else hash end,
+      trocar_senha = case when coalesce(p_nova_senha, '') <> '' then true else trocar_senha end   -- senha definida pelo admin: a pessoa redefine no próximo acesso
       where usuario = lower(trim(p_anterior)) returning * into r;
     if not found then raise exception 'Usuário não encontrado'; end if;
     if coalesce(p_nova_senha, '') <> '' and length(p_nova_senha) < 6 then raise exception 'A senha precisa ter ao menos 6 caracteres'; end if;

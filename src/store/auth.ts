@@ -11,6 +11,8 @@ export interface Perfil {
   processo?: string | null;
   gerencia?: string | null;
   nivel: Nivel;
+  /** precisa definir uma nova senha antes de usar o sistema (primeiro acesso ou senha redefinida pelo administrador) */
+  trocarSenha?: boolean;
   /** sessão aberta sem o servidor de usuários (antes de instalar supabase/usuarios.sql) */
   legado?: boolean;
 }
@@ -42,6 +44,8 @@ interface AuthState {
   perfil: Perfil | null;
   entrar: (p: Perfil, senha?: string) => void;
   sair: () => void;
+  /** o servidor avisou que a senha precisa ser redefinida: abre a janela obrigatória */
+  exigirTroca: (msg: string) => boolean;
 }
 
 export const useAuth = create<AuthState>(set => ({
@@ -50,6 +54,12 @@ export const useAuth = create<AuthState>(set => ({
     try { localStorage.setItem(CHAVE, JSON.stringify(p)); } catch { /* sem storage */ }
     senhaEmMemoria = senha;
     set({ perfil: p });
+  },
+  exigirTroca: msg => {
+    if (!/Redefina sua senha/i.test(msg)) return false;
+    const p = useAuth.getState().perfil;
+    if (p) useAuth.getState().entrar({ ...p, trocarSenha: true }, senhaEmMemoria);
+    return true;
   },
   sair: () => {
     try { localStorage.removeItem(CHAVE); } catch { /* sem storage */ }

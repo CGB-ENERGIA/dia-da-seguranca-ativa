@@ -5,7 +5,7 @@ import { CampoSenha, CountUp, Logo, TemaToggle } from "../components/ui";
 import BuscaNome from "../components/BuscaNome";
 import { validarAdmin } from "../lib/admin";
 import { podeAcessar, useAuth, type Perfil } from "../store/auth";
-import { loginChapa, loginUsuario, RpcAusente, usuariosPublicos } from "../lib/remote";
+import { loginChapa, loginUsuario, RpcAusente, usuariosPublicos, type PerfilRemoto } from "../lib/remote";
 import { kvGet, kvSet } from "../lib/db";
 import { todosRegistros, useData } from "../store/data";
 import { agora } from "../lib/dates";
@@ -96,6 +96,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
       });
   }, [modo]);
 
+  const doServidor = (p: PerfilRemoto): Perfil => ({ usuario: p.usuario, nome: p.nome, chapa: p.chapa, funcao: p.funcao, base: p.base, processo: p.processo, gerencia: p.gerencia, nivel: p.nivel, trocarSenha: !!p.trocar_senha });
   const falhar = (msg: string) => { setErro(msg); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); };
 
   const enviar = async (e: FormEvent) => {
@@ -104,7 +105,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
     try {
       let perfil: Perfil;
       if (modo === "relatorio") {
-        try { perfil = (await loginUsuario(usuario, senha)) as Perfil; }
+        try { perfil = doServidor(await loginUsuario(usuario, senha)); }
         catch (err) {
           if (!(err instanceof RpcAusente)) throw err;
           const u = await validarAdmin(usuario, senha); // enquanto o cadastro de usuários não está no banco
@@ -116,7 +117,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
       } else {
         if (!sel) throw new Error("Escolha seu nome na lista.");
         if (legado) perfil = { usuario: String(sel.c), nome: sel.nome, chapa: sel.c, funcao: sel.f, base: sel.b, processo: sel.p, gerencia: sel.g, nivel: "observador", legado: true };
-        else perfil = (await loginChapa(sel.c, senha)) as Perfil;
+        else perfil = doServidor(await loginChapa(sel.c, senha));
         entrar(perfil, legado ? "" : senha);
       }
       garantirColab(perfil);

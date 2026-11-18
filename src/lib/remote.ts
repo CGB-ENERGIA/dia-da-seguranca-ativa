@@ -124,7 +124,7 @@ export async function excluirRegistros(usuario: string, senha: string, ids: stri
 export class RpcAusente extends Error {}
 export interface PerfilRemoto {
   usuario: string; nome: string; chapa: number | null; funcao: string | null; base: string | null;
-  processo: string | null; gerencia: string | null; nivel: "admin" | "gestor" | "consulta" | "observador"; ativo?: boolean;
+  processo: string | null; gerencia: string | null; nivel: "admin" | "gestor" | "consulta" | "observador"; ativo?: boolean; trocar_senha?: boolean;
 }
 
 async function rpc<T>(nome: string, corpo: object): Promise<T> {
