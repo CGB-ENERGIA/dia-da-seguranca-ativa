@@ -64,7 +64,7 @@ export default function BuscaNome({ opcoes, sel, onSel, rotulo = "Seu nome", avi
             </div>
           </motion.div>
         ) : texto && !sugestoes.length ? (
-          <div className="px-1 text-[13px] font-bold text-vinho-500">{aviso ?? "Nome não encontrado."}</div>
+          <div className="px-1 text-[13px] font-bold text-vinho-500">{texto.trim().startsWith("@") ? "Aqui vale o seu NOME (ex.: Antonio Abreu), não o @usuário. O @usuário é só para o relatório." : (aviso ?? "Nome não encontrado.")}</div>
         ) : null}
       </div>
     </div>
