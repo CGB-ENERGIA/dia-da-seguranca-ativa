@@ -104,8 +104,37 @@ export default function Lancar() {
   }, [stream]);
   useEffect(() => () => stream?.getTracks().forEach(t => t.stop()), [stream]);
 
+  // celular/tablet: abre o app de câmera nativo do aparelho; computador: câmera ao vivo no navegador
+  const nativa = useMemo(() => { try { return matchMedia("(pointer: coarse)").matches && navigator.maxTouchPoints > 0; } catch { return false; } }, []);
+  const arquivo = useRef<HTMLInputElement>(null);
+
+  /** Foto vinda da câmera nativa: só vale se foi tirada agora (bloqueia imagem antiga da galeria). */
+  const capturarArquivo = async (f: File) => {
+    if (fotos.length >= MAX_FOTOS) { setCamErro("Limite de 5 fotos por lançamento."); return; }
+    setCamErro("");
+    if (!f.type.startsWith("image/")) { setCamErro("Arquivo inválido. Tire a foto com a câmera."); return; }
+    if (f.lastModified && Math.abs(Date.now() - f.lastModified) > 3 * 60 * 1000) {
+      setCamErro("Essa imagem não foi tirada agora. Use a câmera para fotografar na hora (imagens da galeria não são aceitas).");
+      return;
+    }
+    setProcessando(true);
+    await sincronizarRelogio();
+    const quando = agoraConfiavel();
+    setRelogio(quando);
+    if (agora(quando).weekday !== 3) { setProcessando(false); setCamErro("Hoje não é quarta-feira. Os lançamentos só são aceitos às quartas."); return; }
+    let l = local;
+    if (!l) { setBuscandoLocal(true); l = await obterLocal(); setLocal(l); setBuscandoLocal(false); }
+    if (!l) { setProcessando(false); setCamErro("Ative a localização do aparelho para registrar (a foto leva o local carimbado)."); return; }
+    try {
+      const bmp = await createImageBitmap(f, { imageOrientation: "from-image" });
+      await montar(bmp, bmp.width, bmp.height, quando, l);
+      bmp.close();
+    } catch { setProcessando(false); setCamErro("Não consegui ler a foto. Tente de novo."); }
+  };
+
   const abrirCamera = async (modo: "environment" | "user" = lado) => {
     setCamErro("");
+    if (nativa) { arquivo.current?.click(); return; }
     if (!navigator.mediaDevices?.getUserMedia) { setCamErro("Este navegador não permite abrir a câmera. Use o Chrome (Android) ou o Safari (iPhone) atualizado."); return; }
     stream?.getTracks().forEach(t => t.stop()); // libera a câmera atual antes de abrir a outra
     try {
@@ -364,6 +393,8 @@ export default function Lancar() {
               )}
               {camErro && <p className="mx-5 mb-3 text-[12.5px] font-bold text-vinho-600">{camErro}</p>}
 
+              <input ref={arquivo} type="file" accept="image/*" capture="environment" className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void capturarArquivo(f); }} />
               <div className="mt-auto flex flex-wrap gap-3 px-5 pb-5">
                 {stream ? (
                   <button className="btn btn-vinho flex-1 !h-14" onClick={() => void capturar()} disabled={processando}><Camera size={20} /> Tirar foto{fotos.length > 0 ? ` (${fotos.length + 1}/${MAX_FOTOS})` : ""}</button>
