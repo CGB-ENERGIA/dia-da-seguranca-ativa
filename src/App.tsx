@@ -8,6 +8,7 @@ import Painel from "./pages/Painel";
 import Colaboradores from "./pages/Colaboradores";
 import Equipes from "./pages/Equipes";
 import Config from "./pages/Config";
+import Insights from "./pages/Insights";
 import Lancar from "./pages/Lancar";
 import Meus from "./pages/Meus";
 import { useAuth } from "./store/auth";
@@ -90,6 +91,7 @@ export default function App() {
         </Route>
         <Route path="relatorio" element={<Relatorio />}>
           <Route index element={<Painel />} />
+          <Route path="insights" element={<Insights />} />
           <Route path="colaboradores" element={<Colaboradores />} />
           <Route path="equipes" element={<Equipes />} />
           <Route path="config" element={<Config />} />

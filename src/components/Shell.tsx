@@ -2,19 +2,21 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
-import { ChevronsLeft, LayoutDashboard, Maximize, Menu, Minimize, Settings2, UsersRound, Waypoints, X, Camera } from "lucide-react";
+import { ChevronsLeft, LayoutDashboard, Sparkles, Maximize, Menu, Minimize, Settings2, UsersRound, Waypoints, X, Camera } from "lucide-react";
 import { Logo, TemaToggle } from "./ui";
 import { LogOut } from "lucide-react";
 import { useAuth } from "../store/auth";
 
 const ITENS = [
   { to: "/relatorio", rot: "Painel de Ações", icone: LayoutDashboard, fim: true },
+  { to: "/relatorio/insights", rot: "Insights", icone: Sparkles },
   { to: "/relatorio/colaboradores", rot: "Colaboradores", icone: UsersRound },
   { to: "/relatorio/equipes", rot: "Equipes", icone: Waypoints },
   { to: "/relatorio/config", rot: "Configurações", icone: Settings2 },
 ];
 const TITULOS: Record<string, [string, string]> = {
   "/relatorio": ["Visão geral", "Painel de Ações"],
+  "/relatorio/insights": ["Gestão", "Insights"],
   "/relatorio/colaboradores": ["Desempenho", "Colaboradores"],
   "/relatorio/equipes": ["Cobertura", "Equipes visitadas"],
   "/relatorio/config": ["Gestão", "Configurações"],
@@ -47,10 +49,16 @@ export default function Shell() {
     <div className="relative flex h-full flex-col overflow-hidden bg-vinho-950 text-white">
       <div className="pointer-events-none absolute inset-0 malha opacity-60" />
       <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-vinho-600/30 blur-3xl" />
-      <div className={clsx("relative flex h-[84px] items-center", compacto ? "justify-center" : "px-6")}>
+      <div className={clsx("relative flex flex-col items-center justify-center text-center", compacto ? "h-[84px]" : "gap-3 px-4 pb-2 pt-9")}>
         {compacto
           ? <img src={`${import.meta.env.BASE_URL}icon-192.png`} alt="CGB" className="h-10 w-10 rounded-xl" />
-          : <Logo branco className="h-9 w-auto" />}
+          : (
+            <>
+              <Logo branco className="h-11 w-auto" />
+              <div className="h-px w-10 bg-white/20" />
+              <span className="text-[11px] font-extrabold uppercase leading-snug tracking-[0.16em] text-white/65">Dia da<br />Segurança Ativa</span>
+            </>
+          )}
       </div>
 
       <nav className="relative mt-3 flex flex-col gap-1 px-3">
@@ -139,7 +147,7 @@ export default function Shell() {
 
         <nav className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 flex h-16 items-center justify-around rounded-3xl bg-vinho-950 px-2 text-white shadow-2xl lg:hidden">
           {ITENS.map(it => (
-            <NavLink key={it.to} to={it.to} end={it.fim} className={({ isActive }) => clsx("grid h-12 w-16 place-items-center rounded-2xl", isActive ? "bg-white/15" : "text-white/55")}>
+            <NavLink key={it.to} to={it.to} end={it.fim} className={({ isActive }) => clsx("grid h-12 w-14 place-items-center rounded-2xl", isActive ? "bg-white/15" : "text-white/55")}>
               <it.icone size={21} />
             </NavLink>
           ))}
