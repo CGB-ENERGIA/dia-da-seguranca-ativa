@@ -92,6 +92,13 @@ export default function Shell() {
           <Camera size={18} />
           {!compacto && <span className="text-[13px] font-bold">Ir para o registro de ações</span>}
         </a>
+        {compacto ? (
+          <div className="mt-3 text-center text-[10px] font-extrabold tracking-wider text-white/40" title="Desenvolvido por Marcus Vinicius Silva Queiros">MQ</div>
+        ) : (
+          <div className="mt-3 px-1 text-center text-[10.5px] font-semibold leading-snug text-white/40">
+            Desenvolvido por<br /><span className="text-white/60">Marcus Vinicius Silva Queiros</span>
+          </div>
+        )}
       </div>
     </div>
   );
