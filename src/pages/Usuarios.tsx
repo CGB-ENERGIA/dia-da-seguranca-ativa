@@ -107,8 +107,11 @@ export default function Usuarios() {
     <>
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {porNivel.map(({ n, qtd }) => (
-          <div key={n} className="card p-5"><span className={clsx("rounded-full px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.08em]", COR[n])}>{NIVEIS[n].rotulo}</span>
-            <div className="display num mt-3 text-[34px] leading-none text-brand">{qtd}</div><div className="mt-1 text-[11.5px] font-semibold text-ink/40">usuários ativos</div></div>
+          <button key={n} type="button" aria-pressed={filtroNivel === n} onClick={() => setFiltroNivel(filtroNivel === n ? "" : n)}
+            className={clsx("card p-5 text-left transition hover:-translate-y-0.5", filtroNivel === n && "ring-2 ring-brand")}>
+            <span className={clsx("rounded-full px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.08em]", COR[n])}>{NIVEIS[n].rotulo}</span>
+            <div className="display num mt-3 text-[34px] leading-none text-brand">{qtd}</div>
+            <div className="mt-1 text-[11.5px] font-semibold text-ink/40">{filtroNivel === n ? "filtrando · toque p/ limpar" : "usuários ativos"}</div></button>
         ))}
       </div>
 
