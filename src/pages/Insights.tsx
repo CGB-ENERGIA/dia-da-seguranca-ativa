@@ -136,12 +136,12 @@ export default function Insights() {
             <Card titulo="Horário dos lançamentos" sub="distribuição das ações ao longo do dia" delay={0.1}>
               <div className="h-[230px]">
                 <ResponsiveContainer>
-                  <BarChart data={d.porHora} margin={{ top: 14, right: 8, left: -18, bottom: 0 }}>
+                  <BarChart data={d.porHora} margin={{ top: 22, right: 8, left: -18, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 5" stroke={grade} vertical={false} />
                     <XAxis dataKey="hora" tick={eixo} axisLine={false} tickLine={false} />
                     <YAxis tick={eixo} axisLine={false} tickLine={false} />
                     <Tooltip content={<Dica />} cursor={{ fill: "rgba(128,128,128,.08)" }} />
-                    <Bar dataKey="Ações" fill={cor} radius={[6, 6, 0, 0]} maxBarSize={30} animationDuration={800} />
+                    <Bar dataKey="Ações" fill={cor} radius={[6, 6, 0, 0]} maxBarSize={30} animationDuration={800} label={{ position: "top", fontSize: 11, fontWeight: 800, fill: tick, formatter: (v: unknown) => (v ? String(v) : "") }} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
