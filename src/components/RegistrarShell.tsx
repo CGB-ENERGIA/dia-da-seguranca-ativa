@@ -47,7 +47,7 @@ export default function RegistrarShell() {
         <div className="flex items-center gap-2 rounded-xl bg-field py-1.5 pl-1.5 pr-1.5 shadow-sm">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-vinho-700 text-[12px] font-extrabold text-white">{colab?.nome.slice(0, 2) ?? "··"}</div>
           <span className="hidden max-w-[140px] truncate text-[13px] font-bold lg:block">{colab?.n}</span>
-          <button onClick={() => setSenhaAberta(true)} title="Alterar senha" aria-label="Alterar senha" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><KeyRound size={16} /></button>
+          {!perfil?.legado && <button onClick={() => setSenhaAberta(true)} title="Alterar senha" aria-label="Alterar senha" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><KeyRound size={16} /></button>}
           <button onClick={sair} title="Sair" className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-soft hover:text-brand"><LogOut size={16} /></button>
         </div>
       </header>

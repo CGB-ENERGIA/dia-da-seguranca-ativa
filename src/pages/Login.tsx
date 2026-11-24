@@ -5,8 +5,7 @@ import { CampoSenha, CountUp, Logo, TemaToggle } from "../components/ui";
 import BuscaNome from "../components/BuscaNome";
 import { validarAdmin } from "../lib/admin";
 import { podeAcessar, useAuth, type Perfil } from "../store/auth";
-import { loginChapa, loginUsuario, RpcAusente, usuariosPublicos, type PerfilRemoto } from "../lib/remote";
-import { kvGet, kvSet } from "../lib/db";
+import { loginUsuario, RpcAusente, type PerfilRemoto } from "../lib/remote";
 import { todosRegistros, useData } from "../store/data";
 import { agora, liberado } from "../lib/dates";
 import type { Colab } from "../lib/types";
@@ -73,28 +72,11 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
   const { historico, remotos, locais, colabs, pronto } = useData();
   const total = useMemo(() => todosRegistros({ historico, remotos, locais }).filter(r => r.d.startsWith(String(new Date().getFullYear()))).length, [historico, remotos, locais]);
   const lideres = useMemo(() => colabs.filter(c => c.l === 1 && c.s === "A"), [colabs]);
-  const [publicos, setPublicos] = useState<Colab[] | null>(null);
-  const [legado, setLegado] = useState(false); // servidor de usuários ainda não instalado
   const [sel, setSel] = useState<Colab | null>(null);
   const [erro, setErro] = useState("");
   const [enviando, setEnviando] = useState(false);
   const tremer = useAnimationControls();
   const hoje = agora();
-
-  // nomes do autocomplete do registro: usuários ativos do servidor (ou, sem o servidor de usuários, as lideranças do cadastro)
-  useEffect(() => {
-    if (modo !== "registrar") return;
-    const paraColab = (u: { chapa: number; nome: string; funcao: string | null; base: string | null }): Colab => {
-      const p = u.nome.split(" ")[0] ?? u.nome;
-      return { c: u.chapa, n: p[0] + p.slice(1).toLowerCase(), nome: u.nome, f: u.funcao ?? "", p: "", b: u.base ?? "", g: "", gr: "", s: "A", ger: "", l: 1 };
-    };
-    usuariosPublicos().then(l => { setPublicos(l.map(paraColab)); void kvSet("usuarios-publicos", l); })
-      .catch(async e => {
-        if (e instanceof RpcAusente) { setLegado(true); return; }
-        const c = await kvGet<Parameters<typeof paraColab>[0][]>("usuarios-publicos");
-        if (c) setPublicos(c.map(paraColab));
-      });
-  }, [modo]);
 
   const doServidor = (p: PerfilRemoto): Perfil => ({ usuario: p.usuario, nome: p.nome, chapa: p.chapa, funcao: p.funcao, base: p.base, processo: p.processo, gerencia: p.gerencia, nivel: p.nivel, trocarSenha: !!p.trocar_senha });
   const falhar = (msg: string) => { setErro(msg); void tremer.start({ x: [0, -9, 9, -6, 6, 0], transition: { duration: 0.4 } }); };
@@ -116,13 +98,13 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
         entrar(perfil, senha);
       } else {
         if (!sel) throw new Error("Escolha seu nome na lista.");
-        if (legado) perfil = { usuario: String(sel.c), nome: sel.nome, chapa: sel.c, funcao: sel.f, base: sel.b, processo: sel.p, gerencia: sel.g, nivel: "observador", legado: true };
-        else perfil = doServidor(await loginChapa(sel.c, senha));
-        entrar(perfil, legado ? "" : senha);
+        // registro: só o nome (sem senha); usuário e senha ficam para o relatório
+        perfil = { usuario: String(sel.c), nome: sel.nome, chapa: sel.c, funcao: sel.f, base: sel.b, processo: sel.p, gerencia: sel.g, nivel: "observador", legado: true };
+        entrar(perfil);
       }
       garantirColab(perfil);
     } catch (err) {
-      falhar(err instanceof TypeError ? "Sem conexão com o servidor. O login precisa de internet." : (err as Error).message);
+      falhar(err instanceof TypeError ? "Sem conexão com o servidor. O acesso ao relatório precisa de internet." : (err as Error).message);
     } finally { setEnviando(false); }
   };
 
@@ -184,7 +166,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
           <Logo branco className="mb-10 hidden h-14 w-auto dark:block" />
           <div className="eyebrow mb-2">{modo === "relatorio" ? "Acesso ao relatório" : "Acesso do observador"}</div>
           <h2 className="display text-[34px] leading-[1.08] text-brand">{modo === "relatorio" ? "Acompanhe os números." : "Quem está em campo hoje?"}</h2>
-          <p className="mt-3 text-[14.5px] font-medium text-ink/55">{modo === "relatorio" ? "Entre com seu usuário e senha." : "Escolha seu nome na lista e digite sua senha."}</p>
+          <p className="mt-3 text-[14.5px] font-medium text-ink/55">{modo === "relatorio" ? "Entre com seu usuário e senha." : "Digite seu nome e escolha-o na lista."}</p>
 
           <motion.div animate={tremer} className="mt-8">
             {modo === "relatorio" ? (
@@ -199,19 +181,14 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
               </div>
             ) : (
               <>
-                <BuscaNome opcoes={legado ? lideres : (publicos ?? [])} sel={sel} onSel={c => { setSel(c); setErro(""); }} aviso="Nome não encontrado. Fale com o SESMT para liberar seu acesso." />
-                {!legado && (
-                  <label className="mt-1 block"><span className="eyebrow mb-2 block">Senha</span>
-                    <CampoSenha className="!h-14 !rounded-2xl" valor={senha} onChange={v => { setSenha(v); setErro(""); }} autoComplete="current-password" placeholder="••••••" />
-                  </label>
-                )}
+                <BuscaNome opcoes={lideres} sel={sel} onSel={c => { setSel(c); setErro(""); }} aviso="Nome não encontrado. Fale com o SESMT para incluir você na lista." />
                 <div className="min-h-[28px] pt-2">{erro && <div role="alert" className="px-1 text-[13px] font-bold text-vinho-500">{erro}</div>}</div>
               </>
             )}
           </motion.div>
 
-          <button className="btn btn-vinho group mt-3 !h-14 w-full text-[15.5px]" disabled={!pronto || enviando || (modo === "relatorio" ? !usuario || !senha : !sel || (!legado && !senha))}>
-            {!pronto ? "Carregando…" : enviando ? "Verificando…" : modo === "relatorio" ? "Abrir relatório" : "Entrar"}
+          <button className="btn btn-vinho group mt-3 !h-14 w-full text-[15.5px]" disabled={!pronto || enviando || (modo === "relatorio" ? !usuario || !senha : !sel)}>
+            {!pronto ? "Carregando…" : enviando ? "Verificando…" : modo === "relatorio" ? "Abrir relatório" : "Continuar"}
             <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
           </button>
 
