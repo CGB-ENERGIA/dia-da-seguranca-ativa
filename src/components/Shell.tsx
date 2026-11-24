@@ -158,11 +158,11 @@ export default function Shell() {
         </header>
 
         <main className="rolagem min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-8 lg:pb-10">
-          <AnimatePresence mode="wait">
-            <motion.div key={loc.pathname} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+          <>
+            <motion.div key={loc.pathname} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}>
               <Outlet />
             </motion.div>
-          </AnimatePresence>
+          </>
         </main>
 
         <nav className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-30 flex h-16 items-center justify-around rounded-3xl bg-vinho-950 px-2 text-white shadow-2xl lg:hidden">

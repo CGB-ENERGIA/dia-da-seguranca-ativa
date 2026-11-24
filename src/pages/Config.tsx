@@ -76,7 +76,7 @@ export default function Config() {
     return m;
   }, [doAno]);
   const f = useMemo(() => filtrosIniciais(ano), [ano]);
-  const obs = useMemo(() => porColaborador(doAno, colabs, f, { meta: edicoes.meta, metas: edicoes.metas }), [doAno, colabs, f, edicoes]);
+  const obs = useMemo(() => (aba === "obs" ? porColaborador(doAno, colabs, f, { meta: edicoes.meta, metas: edicoes.metas }) : []), [aba, doAno, colabs, f, edicoes]);
   const anos = useMemo(() => [...new Set(linhas.map(l => l.ano))].sort(), [linhas]);
 
   const lideres = useMemo(() => colabs.filter(c => c.l === 1 && c.s === "A" && c.gr === "SEGURANÇA"), [colabs]);
