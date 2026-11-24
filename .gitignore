@@ -20,3 +20,6 @@ supabase/exclusao-senha.sql
 *.xlsx
 *.xls
 supabase/usuarios-seed.sql
+
+supabase/fiscais-seed.sql
+supabase/fiscais-novos-acessos.tsv
