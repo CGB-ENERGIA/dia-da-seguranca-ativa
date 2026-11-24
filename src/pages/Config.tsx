@@ -52,7 +52,7 @@ function Gaveta({ titulo, aberto, onFechar, children }: { titulo: string; aberto
 
 export default function Config() {
   const [gestor, setGestor] = useState(true);
-  const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, excluirEquipe, historico } = useData();
+  const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, excluirEquipe, restaurarEquipe, historico } = useData();
   const { linhas } = useDados();
   const { pendentes, online, sincronizando } = useSync();
   const [aba, setAba] = useState<Aba>("meta");
@@ -105,7 +105,9 @@ export default function Config() {
 
   const listaColabs = colabs.filter(c => (filtroPart === "" || (filtroPart === "sim") === (c.l === 1)) && (!t || c.nome.toLowerCase().includes(t) || c.n.toLowerCase().includes(t) || String(c.c).includes(t)))
     .sort((a, b) => (porChapa.get(b.c)?.length ?? 0) - (porChapa.get(a.c)?.length ?? 0) || a.nome.localeCompare(b.nome));
-  const listaEq = equipes.filter(e => e.y.includes(ano) && (!t || e.p.toLowerCase().includes(t) || e.pr.toLowerCase().includes(t)))
+  const removidas = edicoes.removidas ?? [];
+  const excluidas = equipes.filter(e => removidas.includes(e.p));
+  const listaEq = equipes.filter(e => !removidas.includes(e.p) && e.y.includes(ano) && (!t || e.p.toLowerCase().includes(t) || e.pr.toLowerCase().includes(t)))
     .sort((a, b) => (porEquipe.get(b.p)?.length ?? 0) - (porEquipe.get(a.p)?.length ?? 0) || a.p.localeCompare(b.p));
   const ativos = colabs.filter(c => c.s === "A").length;
 
@@ -225,6 +227,17 @@ export default function Config() {
               </tbody>
             </table>
           </div>
+          {excluidas.length > 0 && (
+            <details className="mt-4 rounded-2xl border border-ink/8 p-4">
+              <summary className="cursor-pointer text-[13.5px] font-extrabold text-brand">Equipes excluídas ({excluidas.length}) — restaurar</summary>
+              <p className="mt-2 text-[12.5px] font-medium text-ink/55">Estas equipes não aparecem no registro. O histórico delas continua nos relatórios.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {excluidas.map(e => (
+                  <button key={e.p} onClick={() => void restaurarEquipe(e.p)} className="flex items-center gap-2 rounded-xl bg-ink/5 px-3 py-2 font-mono text-[12.5px] font-bold text-brand hover:bg-soft"><Plus size={13} /> {e.p}</button>
+                ))}
+              </div>
+            </details>
+          )}
         </Card>
       )}
 
@@ -325,7 +338,7 @@ export default function Config() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setApagarE(null)} className="fixed inset-0 z-[60] bg-[#000]/60 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="fixed left-1/2 top-1/2 z-[70] w-[calc(100%-2rem)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-card p-6 shadow-2xl">
               <h3 className="display text-[22px] text-brand">Excluir equipe {apagarE.p}?</h3>
-              <p className="mt-2 text-[13.5px] font-medium leading-relaxed text-ink/60">Ela some da lista de equipes do registro. O histórico de visitas já lançado <b>não é apagado</b>. Para reativar, cadastre de novo o mesmo prefixo em “Nova”. Para só pausar, desmarque “Equipe ativa” na edição.</p>
+              <p className="mt-2 text-[13.5px] font-medium leading-relaxed text-ink/60">Ela some da lista de equipes do registro e deste cadastro. O histórico de visitas já lançado <b>continua nos relatórios</b>. Para reativar, use “Equipes excluídas — restaurar” abaixo da tabela. Para só pausar, desmarque “Equipe ativa” na edição.</p>
               <div className="mt-5 flex gap-3">
                 <button className="btn btn-claro flex-1" onClick={() => setApagarE(null)}>Cancelar</button>
                 <button className="btn btn-vinho flex-1" onClick={() => { void excluirEquipe(apagarE.p); setApagarE(null); }}><Trash2 size={16} /> Excluir</button>

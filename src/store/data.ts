@@ -34,6 +34,7 @@ interface DataState {
   salvarColab: (c: Colab) => Promise<void>;
   salvarEquipe: (e: Equipe) => Promise<void>;
   excluirEquipe: (p: string) => Promise<void>;
+  restaurarEquipe: (p: string) => Promise<void>;
   setMeta: (n: number) => Promise<void>;
   setMetaColab: (chapa: number, n: number | null) => Promise<void>;
   removerRemotos: (ids: string[]) => Promise<void>;
@@ -70,7 +71,6 @@ function derivar(colabsBase: Colab[], equipesBase: Equipe[], ed: Edicoes, extras
   for (const c of Object.values(ed.colabs)) m.set(c.c, c);
   const e = new Map<string, Equipe>(equipesBase.map(x => [x.p, x]));
   for (const x of Object.values(ed.equipes)) e.set(x.p, x);
-  for (const p of ed.removidas ?? []) e.delete(p);
   return { colabs: [...m.values()], mapa: m, equipes: [...e.values()] };
 }
 
@@ -141,9 +141,9 @@ export const useData = create<DataState>((set, get) => {
     salvarEquipe: e => persistir({ ...get().edicoes, equipes: { ...get().edicoes.equipes, [e.p]: e }, removidas: (get().edicoes.removidas ?? []).filter(p => p !== e.p) }),
     excluirEquipe: p => {
       const ed = get().edicoes;
-      const equipes = { ...ed.equipes }; delete equipes[p];
-      return persistir({ ...ed, equipes, removidas: [...new Set([...(ed.removidas ?? []), p])] });
+      return persistir({ ...ed, removidas: [...new Set([...(ed.removidas ?? []), p])] }); // só tira do registro e do cadastro; histórico e relatórios ficam
     },
+    restaurarEquipe: p => persistir({ ...get().edicoes, removidas: (get().edicoes.removidas ?? []).filter(x => x !== p) }),
     garantirColab: p => {
       const s = get();
       if (!p.chapa || s.mapa.has(p.chapa)) return;

@@ -63,6 +63,7 @@ export default function Lancar() {
   const chapa = useAuth(s => s.perfil?.chapa ?? null);
   const colab = useData(s => (chapa ? s.mapa.get(chapa) : undefined));
   const equipes = useData(s => s.equipes);
+  const removidas = useData(s => s.edicoes.removidas);
   // hora do servidor quando há internet (o relógio do aparelho pode ser mudado pelo usuário)
   const [relogio, setRelogio] = useState(() => agoraConfiavel());
   const hoje = agora(relogio);
@@ -152,9 +153,9 @@ export default function Lancar() {
 
   const sugestoes = useMemo(() => {
     const q = busca.trim().toUpperCase();
-    const lista = equipes.filter(e => e.y.includes(+hoje.d.slice(0, 4)) && (!q || e.p.includes(q) || e.pr.toUpperCase().includes(q)));
+    const lista = equipes.filter(e => !removidas?.includes(e.p) && e.y.includes(+hoje.d.slice(0, 4)) && (!q || e.p.includes(q) || e.pr.toUpperCase().includes(q)));
     return lista.sort((a, b) => Number(b.b === colab?.b) - Number(a.b === colab?.b) || a.p.localeCompare(b.p)).slice(0, 7);
-  }, [busca, equipes, colab, hoje.d]);
+  }, [busca, equipes, removidas, colab, hoje.d]);
 
   const montar = async (fonte: CanvasImageSource, w: number, h: number, quando: Date, l: Local) => {
     if (!colab) return;
