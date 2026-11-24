@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ClipboardCheck, GraduationCap, HardHat, Siren, Truck, Wrench, Users, MapPinned, Target, History } from "lucide-react";
 import Filtros from "../components/Filtros";
-import { Card, CountUp, Vazio } from "../components/ui";
+import { Card, CountUp, Info, Vazio } from "../components/ui";
 import { Anel, BarrasH, CORES, CORES_ESCURO, Colunas, Spark } from "../components/graficos";
 import { useTema } from "../store/tema";
 import { useDados } from "../store/derivados";
@@ -111,7 +111,7 @@ export default function Painel() {
         <div className="absolute -right-20 -top-28 -z-10 h-80 w-80 rounded-full bg-vinho-500/40 blur-3xl" />
         <div className="grid items-end gap-8 lg:grid-cols-[1.2fr_1fr]">
           <div>
-            <div className="eyebrow !text-white/55">Total de ações</div>
+            <div className="eyebrow flex items-center gap-1 !text-white/55">Total de ações<Info k="total" claro /></div>
             <div className="display mt-1 text-[clamp(84px,13vw,168px)] leading-[0.85] tracking-[-0.03em]">
               <CountUp key={`${f.ano}${f.mes}${f.semana}${f.base}${f.gerencia}${f.grupo}${f.acao}${f.processo}`} valor={total} />
             </div>
@@ -127,21 +127,22 @@ export default function Painel() {
               <div key={k.r} className="rounded-2xl bg-white/8 p-4 ring-1 ring-white/10 backdrop-blur-sm">
                 <k.icone size={17} className="mb-3 text-ambar" />
                 <div className="display text-[44px] leading-none"><CountUp valor={k.v} /></div>
-                <div className="mt-1 text-[11.5px] font-bold uppercase tracking-[0.1em] text-white/50">{k.r}</div>
+                <div className="mt-1 flex items-center gap-1 text-[11.5px] font-bold uppercase tracking-[0.1em] text-white/50">{k.r}<Info k={k.r} claro /></div>
               </div>
             ))}
             <div className="flex flex-col items-center justify-center rounded-2xl bg-white/8 p-3 ring-1 ring-white/10">
               <Anel pct={aderencia} tam={92} cor="#f2b134" fundo="rgba(255,255,255,.14)">
                 <span className="display text-[26px] leading-none"><CountUp valor={Math.round(aderencia * 100)} />%</span>
               </Anel>
-              <div className="mt-1 flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/50"><Target size={11} /> meta</div>
+              <div className="mt-1 flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/50"><Target size={11} /> meta<Info k="meta" claro /></div>
             </div>
           </div>
         </div>
       </motion.section>
 
       {/* tipos de ação */}
-      <div className="rolagem -mx-1 mt-5 flex gap-3 overflow-x-auto px-1 pb-1 lg:grid lg:overflow-visible" style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}>
+      <div className="mt-5 flex items-center gap-1"><span className="eyebrow">Ações por tipo</span><Info k="tipos" /></div>
+      <div className="rolagem -mx-1 mt-2 flex gap-3 overflow-x-auto px-1 pb-1 lg:grid lg:overflow-visible" style={{ gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))` }}>
         {tiles.map((i, k) => {
           const Icone = ICONES[i], n = porAcao.get(i) ?? 0, on = f.acao === i;
           return (
@@ -160,7 +161,7 @@ export default function Painel() {
       </div>
 
       <div className="mt-5 grid gap-5 xl:grid-cols-[1.7fr_1fr]">
-        <Card titulo="Evolução por quarta-feira" sub="ações e visitas em cada Dia da Segurança Ativa">
+        <Card info="evolucao" titulo="Evolução por quarta-feira" sub="ações e visitas em cada Dia da Segurança Ativa">
           <div className="h-[290px]">
             {evolucao.length ? (
               <ResponsiveContainer>
@@ -184,7 +185,7 @@ export default function Painel() {
           </div>
         </Card>
 
-        <Card titulo="por Gerência" sub="clique para filtrar">
+        <Card info="gerencia" titulo="por Gerência" sub="clique para filtrar">
           {porGer.length ? (
             <div className="grid items-center gap-4 sm:grid-cols-[1fr_1fr] xl:grid-cols-1">
               <div className="relative mx-auto h-[300px] w-full max-w-[420px]">
@@ -219,18 +220,18 @@ export default function Painel() {
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-        <Card titulo="por Base" sub="ações por base operacional">
+        <Card info="base" titulo="por Base" sub="ações por base operacional">
           <BarrasH itens={porBase} ativo={f.base} onClick={n => set({ base: n })} />
         </Card>
-        <Card titulo="por Quarta-feira" sub="1ª a 5ª quarta do mês" delay={0.05}>
+        <Card info="quartaMes" titulo="por Quarta-feira" sub="1ª a 5ª quarta do mês" delay={0.05}>
           {porSem.length ? <Colunas itens={porSem} ativo={f.semana ? String(f.semana) : ""} onClick={n => set({ semana: n ? +n : 0 })} /> : <Vazio />}
         </Card>
-        <Card titulo="por Processo" sub="processo do observador" delay={0.1} className="lg:col-span-2 xl:col-span-1">
+        <Card info="processo" titulo="por Processo" sub="processo do observador" delay={0.1} className="lg:col-span-2 xl:col-span-1">
           <BarrasH itens={porProc} ativo={f.processo} onClick={n => set({ processo: n })} />
         </Card>
       </div>
 
-      <Card titulo="Mapa de calor" sub="bases × últimas quartas-feiras do período" className="mt-5">
+      <Card info="calor" titulo="Mapa de calor" sub="bases × últimas quartas-feiras do período" className="mt-5">
         {calor.datas.length ? (
           <div className="rolagem overflow-x-auto pb-1">
             <div className="grid min-w-[560px] gap-1.5" style={{ gridTemplateColumns: `64px repeat(${calor.datas.length}, minmax(34px,1fr))` }}>

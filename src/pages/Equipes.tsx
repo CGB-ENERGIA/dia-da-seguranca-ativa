@@ -58,7 +58,7 @@ export default function Equipes() {
       <Filtros semAcao />
       <div className="grid gap-5 xl:grid-cols-[1fr_1fr_1fr]">
         <div className="space-y-5 xl:col-span-1">
-          <Card titulo="Taxa de contato" sub="equipes visitadas ÷ equipes ativas">
+          <Card info="taxa" titulo="Taxa de contato" sub="equipes visitadas ÷ equipes ativas">
             <div className="flex items-center gap-6">
               <Anel pct={taxa} tam={148}><div className="text-center"><div className="display text-[44px] leading-none text-brand"><CountUp valor={Math.round(taxa * 100)} />%</div></div></Anel>
               <dl className="space-y-3 text-[13px] font-semibold text-ink/55">
@@ -67,15 +67,15 @@ export default function Equipes() {
               </dl>
             </div>
           </Card>
-          <Card titulo="Visitas por Base" sub="observador × equipe × dia">
+          <Card info="visitasBase" titulo="Visitas por Base" sub="observador × equipe × dia">
             <BarrasH itens={visBase} ativo={f.base} onClick={n => set({ base: n })} />
             <p className="mt-4 text-[11.5px] font-semibold leading-relaxed text-ink/40">
               Ações no período: {acoesBase.reduce((a, b) => a + b.valor, 0)}. Várias ações do mesmo observador na mesma equipe/dia contam como uma única visita.
             </p>
           </Card>
         </div>
-        <Card titulo="Equipes mais visitadas" sub="nº de visitas no período" delay={0.05}><Lista itens={mais} vazio="Nenhuma visita no recorte." /></Card>
-        <Card titulo="Equipes não visitadas" sub={`${nao.length} sem nenhuma visita`} delay={0.1}><Lista itens={nao} vazio="Todas as equipes foram visitadas" /></Card>
+        <Card info="maisVisitadas" titulo="Equipes mais visitadas" sub="nº de visitas no período" delay={0.05}><Lista itens={mais} vazio="Nenhuma visita no recorte." /></Card>
+        <Card info="naoVisitadas" titulo="Equipes não visitadas" sub={`${nao.length} sem nenhuma visita`} delay={0.1}><Lista itens={nao} vazio="Todas as equipes foram visitadas" /></Card>
       </div>
     </>
   );

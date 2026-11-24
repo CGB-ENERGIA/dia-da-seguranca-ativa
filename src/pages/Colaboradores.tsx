@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { clsx } from "clsx";
 import { Crown, Search } from "lucide-react";
 import Filtros from "../components/Filtros";
-import { Card, CountUp, Vazio } from "../components/ui";
+import { Card, CountUp, Info, Vazio } from "../components/ui";
 import { Anel } from "../components/graficos";
 import { useDados } from "../store/derivados";
 import { porColaborador } from "../lib/analytics";
@@ -39,7 +39,7 @@ export default function Colaboradores() {
                 {i === 0 && <div className="aurora absolute inset-0" />}
                 <div className="relative flex items-start justify-between">
                   <span className={clsx("display text-[54px] leading-none", i === 0 ? "text-ambar" : "text-vinho-300")}>{i + 1}º</span>
-                  {i === 0 && <Crown size={22} className="text-ambar" />}
+                  <span className="flex items-center gap-1">{i === 0 && <Crown size={22} className="text-ambar" />}<Info k="podio" claro={i === 0} /></span>
                 </div>
                 <div className="relative mt-3 truncate text-[17px] font-extrabold">{p.c.n}</div>
                 <div className={clsx("relative text-[12px] font-semibold", i === 0 ? "text-white/60" : "text-ink/45")}>{p.c.b} · {p.c.g}</div>
@@ -52,7 +52,7 @@ export default function Colaboradores() {
             {!podio.length && <Card className="md:col-span-3"><Vazio /></Card>}
           </div>
 
-          <Card titulo="Relatório de ações por colaborador" sub={`meta: ${cfg.meta} ação(ões) por quarta · ${meta} quarta${meta === 1 ? "" : "s"} no período`}
+          <Card info="relatorioColab" titulo="Relatório de ações por colaborador" sub={`meta: ${cfg.meta} ação(ões) por quarta · ${meta} quarta${meta === 1 ? "" : "s"} no período`}
             direita={
               <div className="flex rounded-xl bg-ink/5 p-1 text-[12px] font-extrabold">
                 {([["acoes", "Ações"], ["aderencia", "Meta"], ["nome", "A–Z"]] as [Ordem, string][]).map(([k, t]) => (
@@ -88,7 +88,7 @@ export default function Colaboradores() {
         </div>
 
         <aside className="space-y-5">
-          <Card titulo="Aderência à meta" sub="quartas com ao menos 1 ação">
+          <Card info="aderencia" titulo="Aderência à meta" sub="quartas com ao menos 1 ação">
             <div className="flex items-center gap-5">
               <Anel pct={mediaAd} tam={132}><span className="display text-[38px] leading-none text-brand"><CountUp valor={Math.round(mediaAd * 100)} />%</span></Anel>
               <div className="text-[13px] font-semibold leading-relaxed text-ink/55">
@@ -96,7 +96,7 @@ export default function Colaboradores() {
               </div>
             </div>
           </Card>
-          <Card titulo="Sem nenhuma ação" sub="observadores com zero no período">
+          <Card info="zerados" titulo="Sem nenhuma ação" sub="observadores com zero no período">
             <div className="display num text-[64px] leading-none text-brand"><CountUp valor={zerados} /></div>
             <ul className="mt-3 flex flex-wrap gap-1.5">
               {lista.filter(x => x.acoes === 0).slice(0, 18).map(x => <li key={x.c.c} className="rounded-full bg-soft px-2.5 py-1 text-[11.5px] font-bold text-brand">{x.c.n}</li>)}

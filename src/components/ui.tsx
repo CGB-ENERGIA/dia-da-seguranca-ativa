@@ -1,7 +1,9 @@
 import { animate, useInView, useMotionValue, useTransform, motion } from "motion/react";
-import { useEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { clsx } from "clsx";
-import { ChevronDown, Eye, EyeOff, Moon, Sun } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, Info as IconeInfo, Moon, Sun } from "lucide-react";
+import { AJUDA } from "../lib/ajuda";
 import { useTema } from "../store/tema";
 
 const BASE = import.meta.env.BASE_URL;
@@ -57,8 +59,54 @@ export function Select({ rotulo, valor, onChange, opcoes, className, neutro }: {
   );
 }
 
-export function Card({ titulo, sub, direita, children, className, delay = 0 }: {
-  titulo?: string; sub?: string; direita?: ReactNode; children: ReactNode; className?: string; delay?: number;
+/** Ícone "i": abre uma explicação (o que é, como ler, por que importa). `k` é a chave em lib/ajuda.ts. */
+export function Info({ k, claro, className }: { k: string; claro?: boolean; className?: string }) {
+  const a = AJUDA[k];
+  const [aberto, setAberto] = useState(false);
+  const [pos, setPos] = useState({ x: 0, y: 0, w: 320 });
+  const btn = useRef<HTMLButtonElement>(null);
+  const caixa = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!aberto || !btn.current) return;
+    const r = btn.current.getBoundingClientRect();
+    const w = Math.min(330, window.innerWidth - 24);
+    const x = Math.max(12, Math.min(window.innerWidth - w - 12, r.left + r.width / 2 - w / 2));
+    const h = caixa.current?.offsetHeight ?? 220;
+    const y = r.bottom + 10 + h > window.innerHeight - 8 ? Math.max(8, r.top - h - 10) : r.bottom + 10;
+    setPos({ x, y, w });
+  }, [aberto]);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: Event) => { const t = e.target as Node; if (!caixa.current?.contains(t) && !btn.current?.contains(t)) setAberto(false); };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setAberto(false);
+    const fecha = () => setAberto(false);
+    document.addEventListener("pointerdown", fora); document.addEventListener("keydown", esc);
+    window.addEventListener("scroll", fecha, true); window.addEventListener("resize", fecha);
+    return () => { document.removeEventListener("pointerdown", fora); document.removeEventListener("keydown", esc); window.removeEventListener("scroll", fecha, true); window.removeEventListener("resize", fecha); };
+  }, [aberto]);
+  if (!a) return null;
+  return (
+    <>
+      <button ref={btn} type="button" onClick={e => { e.stopPropagation(); setAberto(v => !v); }} aria-label="O que é este dado?" aria-expanded={aberto} title="O que é, como ler e por que importa"
+        className={clsx("inline-grid h-6 w-6 shrink-0 place-items-center rounded-full transition active:scale-90", claro ? "text-white/60 hover:bg-white/15 hover:text-white" : "text-ink/40 hover:bg-soft hover:text-brand", aberto && (claro ? "bg-white/20 text-white" : "bg-soft text-brand"), className)}>
+        <IconeInfo size={15} />
+      </button>
+      {aberto && createPortal(
+        <div ref={caixa} role="dialog" style={{ position: "fixed", left: pos.x, top: pos.y, width: pos.w, zIndex: 100 }}
+          className="rounded-2xl border border-ink/10 bg-card p-4 text-left shadow-2xl">
+          {([["O que é", a.o], ["Como ler", a.l], ["Por que importa", a.i]] as const).map(([t, x]) => (
+            <div key={t} className="mb-2.5 last:mb-0">
+              <div className="eyebrow !text-[10px]">{t}</div>
+              <p className="mt-0.5 text-[13px] font-medium leading-relaxed text-ink/75">{x}</p>
+            </div>
+          ))}
+        </div>, document.body)}
+    </>
+  );
+}
+
+export function Card({ titulo, sub, direita, children, className, delay = 0, info }: {
+  titulo?: string; sub?: string; direita?: ReactNode; children: ReactNode; className?: string; delay?: number; info?: string;
 }) {
   return (
     <motion.section
@@ -71,7 +119,7 @@ export function Card({ titulo, sub, direita, children, className, delay = 0 }: {
       {(titulo || direita) && (
         <header className="mb-4 flex items-start justify-between gap-3">
           <div>
-            {titulo && <h3 className="display text-[26px] leading-none text-brand">{titulo}</h3>}
+            {titulo && <h3 className="display flex items-center gap-1.5 text-[26px] leading-none text-brand">{titulo}{info && <Info k={info} />}</h3>}
             {sub && <p className="mt-1.5 text-[12.5px] font-medium text-ink/50">{sub}</p>}
           </div>
           {direita}

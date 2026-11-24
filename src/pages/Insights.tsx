@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AlertTriangle, Clock3, Database, Gauge, PieChart, Trophy, TrendingUp, UsersRound, Waypoints } from "lucide-react";
 import Filtros from "../components/Filtros";
-import { Card, Vazio } from "../components/ui";
+import { Card, Info, Vazio } from "../components/ui";
 import { BarrasH, CORES, CORES_ESCURO, Colunas } from "../components/graficos";
 import { useDados } from "../store/derivados";
 import { useTema } from "../store/tema";
@@ -40,7 +40,7 @@ function Insight({ c, i }: { c: CardInsight; i: number }) {
         <div className="grid h-10 w-10 place-items-center rounded-xl bg-soft text-vinho-500"><Icone size={19} /></div>
         <span className={clsx("rounded-full px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-[0.08em]", t.chip)}>{t.rot}</span>
       </div>
-      <div className="eyebrow mt-4">{c.titulo}</div>
+      <div className="eyebrow mt-4 flex items-center gap-1">{c.titulo}<Info k={c.titulo} /></div>
       <div className="display num mt-1 text-[30px] leading-tight text-brand">{c.valor}</div>
       <p className="mt-2 text-[13px] font-medium leading-relaxed text-ink/60">{c.texto}</p>
     </motion.article>
@@ -70,7 +70,7 @@ export default function Insights() {
           <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{d.cards.map((c, i) => <Insight key={c.titulo} c={c} i={i} />)}</div>
 
           <div className="mt-5 grid gap-5 xl:grid-cols-2">
-            <Card titulo="Ritmo por quarta-feira" sub="ações lançadas e média móvel das últimas 4 quartas">
+            <Card info="ritmoQuarta" titulo="Ritmo por quarta-feira" sub="ações lançadas e média móvel das últimas 4 quartas">
               <div className="h-[280px]">
                 <ResponsiveContainer>
                   <ComposedChart data={d.serie} margin={{ top: 14, right: 8, left: -18, bottom: 0 }}>
@@ -86,7 +86,7 @@ export default function Insights() {
               <Legenda itens={[["Ações", cor], ["Média 4 quartas", "#f2b134"]]} />
             </Card>
 
-            <Card titulo="Adesão das lideranças" sub="% da meta cumprida pelas lideranças ativas em cada quarta" delay={0.05}>
+            <Card info="adesaoQuarta" titulo="Adesão das lideranças" sub="% da meta cumprida pelas lideranças ativas em cada quarta" delay={0.05}>
               <div className="h-[280px]">
                 <ResponsiveContainer>
                   <AreaChart data={d.adesao} margin={{ top: 14, right: 8, left: -18, bottom: 0 }}>
@@ -102,7 +102,7 @@ export default function Insights() {
               </div>
             </Card>
 
-            <Card titulo="Mix de ações por mês" sub="como o programa se distribui entre os tipos de ação" delay={0.05}>
+            <Card info="mixMes" titulo="Mix de ações por mês" sub="como o programa se distribui entre os tipos de ação" delay={0.05}>
               <div className="h-[290px]">
                 <ResponsiveContainer>
                   <BarChart data={d.mixMes} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
@@ -117,23 +117,23 @@ export default function Insights() {
               <Legenda itens={chavesMix.map(a => [a, paleta[ACAO_CURTA.indexOf(a) % paleta.length]] as [string, string])} />
             </Card>
 
-            <Card titulo="Cobertura de equipes por base" sub="% das equipes ativas que receberam ao menos uma visita" delay={0.1}>
+            <Card info="coberturaBase" titulo="Cobertura de equipes por base" sub="% das equipes ativas que receberam ao menos uma visita" delay={0.1}>
               <BarrasH itens={d.coberturaBase} formato={v => `${v}%`} max={100} />
             </Card>
 
-            <Card titulo="Lideranças por faixa de aderência" sub="quantas lideranças estão em cada nível de cumprimento da meta" delay={0.05}>
+            <Card info="faixas" titulo="Lideranças por faixa de aderência" sub="quantas lideranças estão em cada nível de cumprimento da meta" delay={0.05}>
               <Colunas itens={d.faixas} altura={230} />
             </Card>
 
-            <Card titulo="Aderência média por gerência" sub="média da aderência dos observadores de cada gerência" delay={0.1}>
+            <Card info="aderGerencia" titulo="Aderência média por gerência" sub="média da aderência dos observadores de cada gerência" delay={0.1}>
               <BarrasH itens={d.aderenciaGerencia} formato={v => `${v}%`} max={100} />
             </Card>
 
-            <Card titulo="Dia do lançamento" sub="o programa acontece na quarta-feira; lançamentos fora dela indicam atraso" delay={0.05}>
+            <Card info="diaLancamento" titulo="Dia do lançamento" sub="o programa acontece na quarta-feira; lançamentos fora dela indicam atraso" delay={0.05}>
               <Colunas itens={d.pontualidade} altura={230} />
             </Card>
 
-            <Card titulo="Horário dos lançamentos" sub="distribuição das ações ao longo do dia" delay={0.1}>
+            <Card info="horario" titulo="Horário dos lançamentos" sub="distribuição das ações ao longo do dia" delay={0.1}>
               <div className="h-[230px]">
                 <ResponsiveContainer>
                   <BarChart data={d.porHora} margin={{ top: 22, right: 8, left: -18, bottom: 0 }}>
@@ -149,7 +149,7 @@ export default function Insights() {
           </div>
 
           {d.inativos.length > 0 && (
-            <Card titulo="Lideranças sem ação nas últimas 4 quartas" sub={`${d.inativos.length} observadores para acompanhar`} className="mt-5" delay={0.05}>
+            <Card info="paradas" titulo="Lideranças sem ação nas últimas 4 quartas" sub={`${d.inativos.length} observadores para acompanhar`} className="mt-5" delay={0.05}>
               <ul className="flex flex-wrap gap-2">
                 {d.inativos.map(c => (
                   <li key={c.c} className="rounded-full bg-soft px-3 py-1.5 text-[12.5px] font-bold text-brand" title={`${c.f.toLowerCase()} · ${c.b}`}>{c.n} <span className="font-semibold text-ink/40">· {c.b}</span></li>
