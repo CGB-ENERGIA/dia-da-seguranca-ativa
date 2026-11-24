@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
-import { Check, CircleDashed, Minus, Pencil, Plus, Trash2, RefreshCw, Search, ShieldCheck, Target, Users, Waypoints, X, CheckCircle2, Copy } from "lucide-react";
+import { CalendarOff, Check, CircleDashed, Minus, Pencil, Plus, Trash2, RefreshCw, Search, ShieldCheck, Target, Users, Waypoints, X, CheckCircle2, Copy } from "lucide-react";
 import { Card, CountUp, Select } from "../components/ui";
 import BuscaNome from "../components/BuscaNome";
 import { useData } from "../store/data";
@@ -14,7 +14,21 @@ import { sincronizar, useSync } from "../lib/sync";
 import type { Colab, Equipe } from "../lib/types";
 
 type Aba = "meta" | "colabs" | "equipes" | "obs" | "sistema";
-const ABAS: [Aba, string][] = [["meta", "Meta"], ["colabs", "Colaboradores"], ["equipes", "Equipes"], ["obs", "Observadores"], ["sistema", "Sistema"]];
+type Modo = "metas" | "config";
+const ABAS_POR: Record<Modo, [Aba, string][]> = {
+  metas: [["meta", "Meta padrão"], ["obs", "Participantes"]],
+  config: [["colabs", "Colaboradores"], ["equipes", "Equipes"], ["sistema", "Sistema"]],
+};
+const MOTIVOS = ["Atestado", "Baixa / afastamento", "Férias", "Outro"];
+const brQ = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+/** Todas as quartas-feiras do ano (YYYY-MM-DD). */
+function quartasAno(ano: number) {
+  const r: string[] = [];
+  const d = new Date(Date.UTC(ano, 0, 1));
+  while (d.getUTCDay() !== 3) d.setUTCDate(d.getUTCDate() + 1);
+  while (d.getUTCFullYear() === ano) { r.push(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() + 7); }
+  return r;
+}
 
 
 function Campo({ rot, v, on, tipo = "text", opcoes, desab }: { rot: string; v: string; on: (v: string) => void; tipo?: string; opcoes?: string[]; desab?: boolean }) {
@@ -50,12 +64,12 @@ function Gaveta({ titulo, aberto, onFechar, children }: { titulo: string; aberto
   );
 }
 
-export default function Config() {
+export default function Config({ modo = "config" }: { modo?: Modo }) {
   const [gestor, setGestor] = useState(true);
-  const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, excluirEquipe, restaurarEquipe, historico } = useData();
+  const { colabs, equipes, edicoes, setMeta, setMetaColab, setDispensas, salvarColab, salvarEquipe, excluirEquipe, restaurarEquipe, historico } = useData();
   const { linhas } = useDados();
   const { pendentes, online, sincronizando } = useSync();
-  const [aba, setAba] = useState<Aba>("meta");
+  const [aba, setAba] = useState<Aba>(ABAS_POR[modo][0][0]);
   const [ano, setAno] = useState(+agora().d.slice(0, 4));
   const [q, setQ] = useState("");
   const [edC, setEdC] = useState<(Colab & { novo?: boolean }) | null>(null);
@@ -63,6 +77,10 @@ export default function Config() {
   const [sel, setSel] = useState<Colab | null>(null);
   const [copiado, setCopiado] = useState("");
   const [apagarE, setApagarE] = useState<Equipe | null>(null);
+  const [dispC, setDispC] = useState<Colab | null>(null);
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const [motivo, setMotivo] = useState(MOTIVOS[0]);
   const [filtroPart, setFiltroPart] = useState<"" | "sim" | "nao">("");
 
   const doAno = useMemo(() => linhas.filter(l => l.ano === ano), [linhas, ano]);
@@ -77,7 +95,7 @@ export default function Config() {
     return m;
   }, [doAno]);
   const f = useMemo(() => filtrosIniciais(ano), [ano]);
-  const obs = useMemo(() => (aba === "obs" ? porColaborador(doAno, colabs, f, { meta: edicoes.meta, metas: edicoes.metas }) : []), [aba, doAno, colabs, f, edicoes]);
+  const obs = useMemo(() => (aba === "obs" ? porColaborador(doAno, colabs, f, { meta: edicoes.meta, metas: edicoes.metas, dispensas: edicoes.dispensas }) : []), [aba, doAno, colabs, f, edicoes]);
   const anos = useMemo(() => [...new Set(linhas.map(l => l.ano))].sort(), [linhas]);
 
   const lideres = useMemo(() => colabs.filter(c => c.l === 1 && c.s === "A" && c.gr === "SEGURANÇA"), [colabs]);
@@ -137,7 +155,7 @@ export default function Config() {
       <div className="flex flex-wrap items-center gap-3">
         <Select neutro rotulo="Ano" valor={ano} onChange={v => setAno(+v)} opcoes={anos.map(a => ({ v: a, t: String(a) }))} className="!min-w-[120px]" />
         <div className="flex flex-wrap gap-1 rounded-2xl bg-ink/5 p-1">
-          {ABAS.map(([k, r]) => (
+          {ABAS_POR[modo].map(([k, r]) => (
             <button key={k} onClick={() => { setAba(k); setQ(""); }} className={clsx("relative rounded-xl px-4 py-2 text-[13px] font-bold transition", aba === k ? "text-brand" : "text-ink/50 hover:text-ink")}>
               {aba === k && <motion.span layoutId="aba" className="absolute inset-0 rounded-xl bg-field shadow" />}
               <span className="relative">{r}</span>
@@ -148,7 +166,7 @@ export default function Config() {
 
       {/* META */}
       {aba === "meta" && (
-        <Card titulo="Meta por quarta-feira" sub="vale para todos os observadores, salvo meta individual (aba Observadores)">
+        <Card titulo="Meta por quarta-feira" sub="vale para todos os observadores, salvo meta individual (aba Participantes)">
           <div className="flex flex-wrap items-center gap-8">
             <div className="flex items-center gap-4">
               <button className="btn btn-claro !h-14 !w-14 !p-0" onClick={() => void setMeta(edicoes.meta - 1)} disabled={edicoes.meta <= 0} aria-label="Diminuir"><Minus size={20} /></button>
@@ -243,10 +261,10 @@ export default function Config() {
 
       {/* OBSERVADORES */}
       {aba === "obs" && (
-        <Card titulo="Observadores e metas" sub={`lideranças ativas · desempenho em ${ano} · deixe a meta individual em branco para usar a padrão (${edicoes.meta})`}>
+        <Card titulo="Participantes da meta" sub={`${obs.length} participantes · desempenho em ${ano} · meta individual em branco = padrão (${edicoes.meta}) · use Dispensas para atestado, baixa ou férias`}>
           <div className="rolagem max-h-[640px] overflow-auto rounded-2xl border border-ink/8">
             <table className="w-full min-w-[640px] border-collapse">
-              <thead className="sticky top-0 bg-card"><tr><Th>Observador</Th><Th d>Base</Th><Th>Ações</Th><Th d>Visitas</Th><Th>Quartas cumpridas</Th><Th>Aderência</Th><Th>Meta / quarta</Th></tr></thead>
+              <thead className="sticky top-0 bg-card"><tr><Th>Observador</Th><Th d>Base</Th><Th>Ações</Th><Th d>Visitas</Th><Th>Quartas cumpridas</Th><Th>Aderência</Th><Th>Meta / quarta</Th><Th>Dispensas</Th></tr></thead>
               <tbody>
                 {obs.map(o => (
                   <tr key={o.c.c} className="border-t border-ink/6 hover:bg-soft">
@@ -258,6 +276,11 @@ export default function Config() {
                       <input type="number" min={0} placeholder={String(edicoes.meta)} value={edicoes.metas[o.c.c] ?? ""} aria-label={`Meta de ${o.c.n}`}
                         onChange={e => void setMetaColab(o.c.c, e.target.value === "" ? null : Number(e.target.value))}
                         className="campo !h-9 !w-20 !px-2 text-center" />
+                    </Td>
+                    <Td>
+                      <button onClick={() => { setDispC(o.c); setDe(""); setAte(""); }} className="flex h-9 items-center gap-1.5 rounded-lg bg-ink/5 px-2.5 text-[12px] font-bold text-brand hover:bg-soft">
+                        <CalendarOff size={14} /> {Object.keys(edicoes.dispensas?.[o.c.c] ?? {}).filter(d => d.startsWith(String(ano))).length || "—"}
+                      </button>
                     </Td>
                   </tr>
                 ))}
@@ -329,6 +352,46 @@ export default function Config() {
             <button className="btn btn-vinho w-full" disabled={!edC.c || !edC.nome} onClick={() => { const { novo: _n, ...c } = edC; void salvarColab({ ...c, n: c.n || c.nome.split(" ")[0] }); setEdC(null); }}>Salvar</button>
           </>
         )}
+      </Gaveta>
+
+      {/* dispensas de quartas */}
+      <Gaveta titulo={dispC ? `Dispensas · ${dispC.n}` : "Dispensas"} aberto={!!dispC} onFechar={() => setDispC(null)}>
+        {dispC && (() => {
+          const atual = edicoes.dispensas?.[dispC.c] ?? {};
+          const lista = Object.entries(atual).filter(([d]) => d.startsWith(String(ano))).sort(([a], [b]) => a.localeCompare(b));
+          const aplicar = () => {
+            const ini = de, fim = ate || de;
+            const novas = quartasAno(ano).filter(q => q >= ini && q <= fim);
+            if (!ini || !novas.length) return;
+            const m = { ...atual }; for (const q of novas) m[q] = motivo;
+            void setDispensas(dispC.c, m); setDe(""); setAte("");
+          };
+          const tirar = (q: string) => { const m = { ...atual }; delete m[q]; void setDispensas(dispC.c, m); };
+          return (
+            <>
+              <p className="text-[13px] font-medium leading-relaxed text-ink/60">Quartas em que <b className="text-brand">{dispC.nome}</b> não é cobrado(a) da meta (atestado, baixa, férias…). Elas saem do cálculo de aderência. Escolha o período: todas as quartas dentro dele são dispensadas.</p>
+              <Campo rot="Motivo" v={motivo} on={setMotivo} opcoes={MOTIVOS} />
+              <div className="grid grid-cols-2 gap-3">
+                <Campo rot="De" v={de} on={setDe} tipo="date" />
+                <Campo rot="Até (opcional)" v={ate} on={setAte} tipo="date" />
+              </div>
+              <button className="btn btn-vinho w-full" disabled={!de} onClick={aplicar}><CalendarOff size={16} /> Dispensar quartas do período</button>
+              <div>
+                <div className="eyebrow mb-2">Quartas dispensadas em {ano} ({lista.length})</div>
+                {lista.length === 0 ? <p className="text-[12.5px] font-medium text-ink/40">Nenhuma.</p> : (
+                  <ul className="space-y-2">
+                    {lista.map(([q, m]) => (
+                      <li key={q} className="flex items-center justify-between rounded-xl bg-ink/5 px-3.5 py-2.5 text-[13px]">
+                        <span><b className="num text-brand">{brQ(q)}</b> <span className="text-ink/50">· {m}</span></span>
+                        <button onClick={() => tirar(q)} aria-label={`Remover dispensa de ${brQ(q)}`} className="grid h-8 w-8 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-vinho-500"><X size={15} /></button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          );
+        })()}
       </Gaveta>
 
       {/* confirmar exclusão de equipe */}

@@ -11,6 +11,6 @@ export function useDados() {
   const filtradas = useMemo(() => aplicar(linhas, f), [linhas, f]);
   // mesmo recorte, mas sem o filtro de ação (para os cartões de ação mostrarem o total de cada tipo)
   const semAcao = useMemo(() => aplicar(linhas, { ...f, acao: -1 }), [linhas, f]);
-  const cfg = useMemo(() => ({ meta: edicoes.meta, metas: edicoes.metas }), [edicoes.meta, edicoes.metas]);
+  const cfg = useMemo(() => ({ meta: edicoes.meta, metas: edicoes.metas, dispensas: edicoes.dispensas }), [edicoes.meta, edicoes.metas, edicoes.dispensas]);
   return { f, linhas, filtradas, semAcao, colabs, equipes, mapa, cfg };
 }

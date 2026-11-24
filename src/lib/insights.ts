@@ -29,8 +29,9 @@ export function calcularInsights(filtradas: Linha[], todas: Linha[], f: Filtros,
   const cont = new Map<string, number>(); // chapa|q -> ações
   for (const x of filtradas) cont.set(`${x.chapa}|${x.q}`, (cont.get(`${x.chapa}|${x.q}`) ?? 0) + 1);
   const adesao = quartas.map(q => {
-    const soma = lideres.reduce((s, c) => { const m = cfg.metas[c.c] ?? cfg.meta; const n = cont.get(`${c.c}|${q}`) ?? 0; return s + (m ? Math.min(1, n / m) : 1); }, 0);
-    return { dia: brDataCurta(q), q, Adesão: lideres.length ? Math.round((soma / lideres.length) * 100) : 0 };
+    const esperados = lideres.filter(c => !cfg.dispensas?.[c.c]?.[q]);
+    const soma = esperados.reduce((s, c) => { const m = cfg.metas[c.c] ?? cfg.meta; const n = cont.get(`${c.c}|${q}`) ?? 0; return s + (m ? Math.min(1, n / m) : 1); }, 0);
+    return { dia: brDataCurta(q), q, Adesão: esperados.length ? Math.round((soma / esperados.length) * 100) : 0 };
   });
 
   // ——— mix de ações por mês ———

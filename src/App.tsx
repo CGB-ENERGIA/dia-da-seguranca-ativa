@@ -112,7 +112,8 @@ export default function App() {
           <Route path="usuarios" element={<Exige min="admin"><Usuarios /></Exige>} />
           <Route path="colaboradores" element={<Colaboradores />} />
           <Route path="equipes" element={<Equipes />} />
-          <Route path="config" element={<Exige min="gestor"><Config /></Exige>} />
+          <Route path="metas" element={<Exige min="gestor"><Config modo="metas" /></Exige>} />
+          <Route path="config" element={<Exige min="gestor"><Config modo="config" /></Exige>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

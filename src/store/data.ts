@@ -11,8 +11,9 @@ export interface Edicoes {
   meta: number; // ações por quarta-feira (padrão 1)
   metas: Record<number, number>; // meta individual (opcional)
   removidas: string[]; // prefixos de equipes excluídas do cadastro
+  dispensas: Record<number, Record<string, string>>; // chapa -> { quarta (YYYY-MM-DD): motivo } · não cobra a meta naquela quarta
 }
-const vazio = (): Edicoes => ({ colabs: {}, equipes: {}, meta: 1, metas: {}, removidas: [] });
+const vazio = (): Edicoes => ({ colabs: {}, equipes: {}, meta: 1, metas: {}, removidas: [], dispensas: {} });
 
 interface DataState {
   pronto: boolean;
@@ -36,6 +37,7 @@ interface DataState {
   excluirEquipe: (p: string) => Promise<void>;
   restaurarEquipe: (p: string) => Promise<void>;
   setMeta: (n: number) => Promise<void>;
+  setDispensas: (chapa: number, d: Record<string, string>) => Promise<void>;
   setMetaColab: (chapa: number, n: number | null) => Promise<void>;
   removerRemotos: (ids: string[]) => Promise<void>;
   extras: Colab[];
@@ -157,6 +159,11 @@ export const useData = create<DataState>((set, get) => {
       const restantes = get().remotos.filter(x => !fora.has(x.id));
       set({ remotos: restantes });
       await kvSet("remotos", restantes);
+    },
+    setDispensas: (chapa, d) => {
+      const dispensas = { ...(get().edicoes.dispensas ?? {}) };
+      if (Object.keys(d).length) dispensas[chapa] = d; else delete dispensas[chapa];
+      return persistir({ ...get().edicoes, dispensas });
     },
     setMeta: n => persistir({ ...get().edicoes, meta: Math.max(0, n) }),
     setMetaColab: (chapa, n) => {

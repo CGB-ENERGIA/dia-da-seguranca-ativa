@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
-import { ChevronsLeft, KeyRound, UserCog, Database, LayoutDashboard, Sparkles, Maximize, Menu, Minimize, Settings2, UsersRound, Waypoints, X, Camera } from "lucide-react";
+import { ChevronsLeft, KeyRound, UserCog, Database, LayoutDashboard, Sparkles, Maximize, Menu, Minimize, Settings2, Target, UsersRound, Waypoints, X, Camera } from "lucide-react";
 import { Logo, TemaToggle } from "./ui";
 import AlterarSenha from "./AlterarSenha";
 import { LogOut } from "lucide-react";
@@ -14,7 +14,8 @@ const ITENS: { to: string; rot: string; icone: typeof LayoutDashboard; fim?: boo
   { to: "/relatorio/equipes", rot: "Equipes", icone: Waypoints, min: "consulta" },
   { to: "/relatorio/insights", rot: "Insights", icone: Sparkles, min: "consulta" },
   { to: "/relatorio/banco", rot: "Banco de dados", icone: Database, min: "gestor" },
-  { to: "/relatorio/config", rot: "Metas", icone: Settings2, min: "gestor" },
+  { to: "/relatorio/metas", rot: "Metas", icone: Target, min: "gestor" },
+  { to: "/relatorio/config", rot: "Configurações", icone: Settings2, min: "gestor" },
   { to: "/relatorio/usuarios", rot: "Usuários", icone: UserCog, min: "admin" },
 ];
 const TITULOS: Record<string, [string, string]> = {
@@ -24,7 +25,8 @@ const TITULOS: Record<string, [string, string]> = {
   "/relatorio/usuarios": ["Gestão", "Usuários"],
   "/relatorio/colaboradores": ["Desempenho", "Colaboradores"],
   "/relatorio/equipes": ["Cobertura", "Equipes visitadas"],
-  "/relatorio/config": ["Gestão", "Metas"],
+  "/relatorio/metas": ["Gestão", "Metas"],
+  "/relatorio/config": ["Gestão", "Configurações"],
 };
 
 const guardar = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* sem storage */ } };

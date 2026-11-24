@@ -69,11 +69,11 @@ export function quartasDoFiltro(f: Filtros) {
   return quartasDoAno(f.ano, hoje).filter(d => (!f.mes || +d.slice(5, 7) === f.mes) && (!f.semana || semanaDoMes(d) === f.semana));
 }
 
-export interface Cfg { meta: number; metas: Record<number, number> }
+export interface Cfg { meta: number; metas: Record<number, number>; dispensas?: Record<number, Record<string, string>> }
 
 /** Meta = N ações por quarta (padrão 1). Aderência = média, por quarta do período, de min(ações ÷ meta, 1). */
 export function porColaborador(l: Linha[], colabs: Colab[], f: Filtros, cfg: Cfg) {
-  const nQuartas = quartasDoFiltro(f).length;
+  const qs = quartasDoFiltro(f);
   const por = new Map<number, Linha[]>();
   for (const x of l) {
     const a = por.get(x.chapa);
@@ -88,11 +88,13 @@ export function porColaborador(l: Linha[], colabs: Colab[], f: Filtros, cfg: Cfg
       const metaQ = cfg.metas[c.c] ?? cfg.meta;
       const porQ = new Map<string, number>();
       for (const r of rs) porQ.set(r.q, (porQ.get(r.q) ?? 0) + 1);
+      const disp = cfg.dispensas?.[c.c] ?? {}; // quartas dispensadas (atestado, férias…) não entram na cobrança
+      const nQuartas = qs.filter(d => !disp[d]).length;
       let soma = 0, cumpridas = 0;
-      for (const n of porQ.values()) { soma += metaQ ? Math.min(1, n / metaQ) : 1; if (n >= metaQ) cumpridas++; }
+      for (const [q, n] of porQ) { if (disp[q]) continue; soma += metaQ ? Math.min(1, n / metaQ) : 1; if (n >= metaQ) cumpridas++; }
       return {
         c, acoes: rs.length, visitas: visitas(rs), dias: cumpridas, meta: nQuartas, metaQ,
-        metaTotal: nQuartas * metaQ, aderencia: nQuartas ? Math.min(1, soma / nQuartas) : 0,
+        metaTotal: nQuartas * metaQ, dispensadas: qs.length - nQuartas, aderencia: nQuartas ? Math.min(1, soma / nQuartas) : qs.length ? 1 : 0,
       };
     })
     .sort((a, b) => b.acoes - a.acoes || a.c.n.localeCompare(b.c.n));
