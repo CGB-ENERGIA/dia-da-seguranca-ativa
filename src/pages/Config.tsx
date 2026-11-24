@@ -82,16 +82,12 @@ export default function Config({ modo = "config" }: { modo?: Modo }) {
   const [ate, setAte] = useState("");
   const [motivo, setMotivo] = useState(MOTIVOS[0]);
   const [filtroPart, setFiltroPart] = useState<"" | "sim" | "nao">("");
+  const [filtroSit, setFiltroSit] = useState<"" | "ativa" | "inativa">("");
 
   const doAno = useMemo(() => linhas.filter(l => l.ano === ano), [linhas, ano]);
   const porChapa = useMemo(() => {
     const m = new Map<number, typeof doAno>();
     for (const l of doAno) (m.get(l.chapa) ?? m.set(l.chapa, []).get(l.chapa)!).push(l);
-    return m;
-  }, [doAno]);
-  const porEquipe = useMemo(() => {
-    const m = new Map<string, typeof doAno>();
-    for (const l of doAno) (m.get(l.equipe) ?? m.set(l.equipe, []).get(l.equipe)!).push(l);
     return m;
   }, [doAno]);
   const f = useMemo(() => filtrosIniciais(ano), [ano]);
@@ -125,8 +121,10 @@ export default function Config({ modo = "config" }: { modo?: Modo }) {
     .sort((a, b) => (porChapa.get(b.c)?.length ?? 0) - (porChapa.get(a.c)?.length ?? 0) || a.nome.localeCompare(b.nome));
   const removidas = edicoes.removidas ?? [];
   const excluidas = equipes.filter(e => removidas.includes(e.p));
-  const listaEq = equipes.filter(e => !removidas.includes(e.p) && e.y.includes(ano) && (!t || e.p.toLowerCase().includes(t) || e.pr.toLowerCase().includes(t)))
-    .sort((a, b) => (porEquipe.get(b.p)?.length ?? 0) - (porEquipe.get(a.p)?.length ?? 0) || a.p.localeCompare(b.p));
+  const eqVisiveis = equipes.filter(e => !removidas.includes(e.p));
+  const eqAtivas = eqVisiveis.filter(e => e.y.includes(ano)).length;
+  const listaEq = eqVisiveis.filter(e => (filtroSit === "" || (filtroSit === "ativa") === e.y.includes(ano)) && (!t || e.p.toLowerCase().includes(t) || e.pr.toLowerCase().includes(t)))
+    .sort((a, b) => a.p.localeCompare(b.p));
   const ativos = colabs.filter(c => c.s === "A").length;
 
   const Th = ({ children, d }: { children?: React.ReactNode; d?: boolean }) => <th className={clsx("px-3 py-2.5 text-left text-[10.5px] font-bold uppercase tracking-[0.1em] text-ink/45", d && "hidden md:table-cell")}>{children}</th>;
@@ -224,21 +222,31 @@ export default function Config({ modo = "config" }: { modo?: Modo }) {
 
       {/* EQUIPES */}
       {aba === "equipes" && (
-        <Card titulo="Cadastro de equipes" sub={`${listaEq.length} equipes ativas em ${ano}`}
+        <Card titulo="Cadastro de equipes" sub={`${eqVisiveis.length} equipes · ${eqAtivas} ativas em ${ano} · o histórico de visitas não é alterado aqui`}
           direita={<button className="btn btn-vinho !h-10 !px-4 text-[13px]" onClick={() => setEdE({ p: "", pr: "", b: "", g: "", y: [ano], novo: true })}><Plus size={16} /> Nova</button>}>
-          <div className="relative mb-3"><Search size={16} className="absolute left-3.5 top-[14px] text-ink/35" /><input className="campo !h-11 !pl-10" placeholder="Buscar prefixo ou processo" value={q} onChange={e => setQ(e.target.value)} /></div>
+          <div className="mb-3 flex flex-wrap gap-3">
+            <div className="relative min-w-[220px] flex-1"><Search size={16} className="absolute left-3.5 top-[14px] text-ink/35" /><input className="campo !h-11 !pl-10" placeholder="Buscar prefixo ou processo" value={q} onChange={e => setQ(e.target.value)} /></div>
+            <div className="flex h-11 gap-1 rounded-xl bg-ink/5 p-1 text-[12.5px] font-bold">
+              {([["", "Todas"], ["ativa", "Ativas"], ["inativa", "Inativas"]] as const).map(([v, r]) => (
+                <button key={v} onClick={() => setFiltroSit(v)} className={clsx("rounded-lg px-3 transition", filtroSit === v ? "bg-field text-brand shadow" : "text-ink/50")}>{r}</button>
+              ))}
+            </div>
+          </div>
           <div className="rolagem max-h-[620px] overflow-auto rounded-2xl border border-ink/8">
             <table className="w-full min-w-[560px] border-collapse">
-              <thead className="sticky top-0 bg-card"><tr><Th>Prefixo</Th><Th>Processo</Th><Th>Base</Th><Th d>Gerência</Th><Th>Visitas</Th><Th d>Ações</Th><Th /></tr></thead>
+              <thead className="sticky top-0 bg-card"><tr><Th>Prefixo</Th><Th>Processo</Th><Th>Base</Th><Th d>Gerência</Th><Th>Ativa em {ano}</Th><Th /></tr></thead>
               <tbody>
-                {listaEq.slice(0, 250).map(e => {
-                  const rs = porEquipe.get(e.p) ?? [];
+                {listaEq.slice(0, 400).map(e => {
+                  const ativa = e.y.includes(ano);
                   return (
                     <tr key={e.p} className="border-t border-ink/6 transition hover:bg-soft">
                       <Td cls="font-mono font-bold text-brand">{e.p}</Td><Td>{e.pr}</Td><Td>{e.b}</Td><Td d>{e.g}</Td>
-                      <Td cls={clsx("num font-extrabold", !rs.length && "text-vinho-500")}>{visitas(rs)}</Td><Td d cls="num">{rs.length}</Td>
+                      <Td><button role="switch" aria-checked={ativa} aria-label={`${ativa ? "Desativar" : "Ativar"} ${e.p} em ${ano}`}
+                        onClick={() => void salvarEquipe({ ...e, y: ativa ? e.y.filter(a => a !== ano) : [...new Set([...e.y, ano])] })}
+                        className={clsx("relative h-7 w-12 rounded-full transition", ativa ? "bg-oliva" : "bg-ink/20")}><span className={clsx("absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all", ativa ? "left-6" : "left-1")} /></button></Td>
                       <Td><div className="flex"><button onClick={() => setEdE(e)} className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-brand" aria-label="Editar"><Pencil size={15} /></button>
-                        <button onClick={() => setApagarE(e)} className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-vinho-500" aria-label={`Excluir ${e.p}`}><Trash2 size={15} /></button></div></Td>
+                        <button onClick={() => setApagarE(e)} disabled={ativa} title={ativa ? "Desative a equipe antes de excluir" : `Excluir ${e.p}`} aria-label={`Excluir ${e.p}`}
+                          className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-vinho-500 disabled:cursor-not-allowed disabled:opacity-25 disabled:hover:bg-transparent disabled:hover:text-ink/45"><Trash2 size={15} /></button></div></Td>
                     </tr>
                   );
                 })}
