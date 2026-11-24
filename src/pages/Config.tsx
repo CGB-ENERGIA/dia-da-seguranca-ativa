@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { clsx } from "clsx";
-import { Check, CircleDashed, Minus, Pencil, Plus, RefreshCw, Search, ShieldCheck, Target, Users, Waypoints, X, CheckCircle2, Copy } from "lucide-react";
+import { Check, CircleDashed, Minus, Pencil, Plus, Trash2, RefreshCw, Search, ShieldCheck, Target, Users, Waypoints, X, CheckCircle2, Copy } from "lucide-react";
 import { Card, CountUp, Select } from "../components/ui";
 import BuscaNome from "../components/BuscaNome";
 import { useData } from "../store/data";
@@ -52,17 +52,18 @@ function Gaveta({ titulo, aberto, onFechar, children }: { titulo: string; aberto
 
 export default function Config() {
   const [gestor, setGestor] = useState(true);
-  const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, historico } = useData();
+  const { colabs, equipes, edicoes, setMeta, setMetaColab, salvarColab, salvarEquipe, excluirEquipe, historico } = useData();
   const { linhas } = useDados();
   const { pendentes, online, sincronizando } = useSync();
   const [aba, setAba] = useState<Aba>("meta");
   const [ano, setAno] = useState(+agora().d.slice(0, 4));
   const [q, setQ] = useState("");
-  const [soLid, setSoLid] = useState(false);
   const [edC, setEdC] = useState<(Colab & { novo?: boolean }) | null>(null);
   const [edE, setEdE] = useState<(Equipe & { novo?: boolean }) | null>(null);
   const [sel, setSel] = useState<Colab | null>(null);
   const [copiado, setCopiado] = useState("");
+  const [apagarE, setApagarE] = useState<Equipe | null>(null);
+  const [filtroPart, setFiltroPart] = useState<"" | "sim" | "nao">("");
 
   const doAno = useMemo(() => linhas.filter(l => l.ano === ano), [linhas, ano]);
   const porChapa = useMemo(() => {
@@ -102,7 +103,7 @@ export default function Config() {
   };
   const base = location.href.split("#")[0];
 
-  const listaColabs = colabs.filter(c => (!soLid || c.l === 1) && (!t || c.nome.toLowerCase().includes(t) || c.n.toLowerCase().includes(t) || String(c.c).includes(t)))
+  const listaColabs = colabs.filter(c => (filtroPart === "" || (filtroPart === "sim") === (c.l === 1)) && (!t || c.nome.toLowerCase().includes(t) || c.n.toLowerCase().includes(t) || String(c.c).includes(t)))
     .sort((a, b) => (porChapa.get(b.c)?.length ?? 0) - (porChapa.get(a.c)?.length ?? 0) || a.nome.localeCompare(b.nome));
   const listaEq = equipes.filter(e => e.y.includes(ano) && (!t || e.p.toLowerCase().includes(t) || e.pr.toLowerCase().includes(t)))
     .sort((a, b) => (porEquipe.get(b.p)?.length ?? 0) - (porEquipe.get(a.p)?.length ?? 0) || a.p.localeCompare(b.p));
@@ -171,11 +172,15 @@ export default function Config() {
           direita={<button className="btn btn-vinho !h-10 !px-4 text-[13px]" onClick={() => setEdC({ c: 0, n: "", nome: "", f: "", p: "", b: "", g: "", gr: "SUPERVISORES", s: "A", ger: "", l: 1, novo: true })}><Plus size={16} /> Novo</button>}>
           <div className="mb-3 flex flex-wrap gap-3">
             <div className="relative min-w-[220px] flex-1"><Search size={16} className="absolute left-3.5 top-[14px] text-ink/35" /><input className="campo !h-11 !pl-10" placeholder="Buscar nome ou chapa" value={q} onChange={e => setQ(e.target.value)} /></div>
-            <label className="flex h-11 cursor-pointer items-center gap-2 rounded-xl bg-ink/5 px-4 text-[13px] font-bold"><input type="checkbox" checked={soLid} onChange={e => setSoLid(e.target.checked)} className="accent-[#9c2a42]" /> Só lideranças</label>
+            <div className="flex h-11 gap-1 rounded-xl bg-ink/5 p-1 text-[12.5px] font-bold">
+              {([["", "Todos"], ["sim", "Participam"], ["nao", "Não participam"]] as const).map(([v, r]) => (
+                <button key={v} onClick={() => setFiltroPart(v)} className={clsx("rounded-lg px-3 transition", filtroPart === v ? "bg-field text-brand shadow" : "text-ink/50")}>{r}</button>
+              ))}
+            </div>
           </div>
           <div className="rolagem max-h-[620px] overflow-auto rounded-2xl border border-ink/8">
             <table className="w-full min-w-[680px] border-collapse">
-              <thead className="sticky top-0 bg-card"><tr><Th>Colaborador</Th><Th d>Função</Th><Th>Base</Th><Th d>Gerência</Th><Th>Líder</Th><Th>Ações</Th><Th d>Visitas</Th><Th /></tr></thead>
+              <thead className="sticky top-0 bg-card"><tr><Th>Colaborador</Th><Th d>Função</Th><Th>Base</Th><Th d>Gerência</Th><Th>Participa da meta</Th><Th>Ações</Th><Th d>Visitas</Th><Th /></tr></thead>
               <tbody>
                 {listaColabs.slice(0, 200).map(c => {
                   const rs = porChapa.get(c.c) ?? [];
@@ -183,7 +188,8 @@ export default function Config() {
                     <tr key={c.c} className="border-t border-ink/6 transition hover:bg-soft">
                       <Td><div className="font-bold text-brand">{c.nome}</div><div className="font-mono text-[11px] text-ink/40">{c.c}{c.s === "D" && " · desligado"}</div></Td>
                       <Td d cls="text-ink/60">{c.f.toLowerCase()}</Td><Td>{c.b}</Td><Td d>{c.g}</Td>
-                      <Td>{c.l ? <span className="rounded-full bg-oliva/15 px-2 py-0.5 text-[11px] font-extrabold text-oliva">sim</span> : <span className="text-ink/30">—</span>}</Td>
+                      <Td><button role="switch" aria-checked={c.l === 1} aria-label={`${c.l ? "Retirar" : "Incluir"} ${c.n} da meta`} onClick={() => void salvarColab({ ...c, l: c.l ? 0 : 1 })}
+                        className={clsx("relative h-7 w-12 rounded-full transition", c.l ? "bg-oliva" : "bg-ink/20")}><span className={clsx("absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all", c.l ? "left-6" : "left-1")} /></button></Td>
                       <Td cls="num font-extrabold">{rs.length}</Td><Td d cls="num">{visitas(rs)}</Td>
                       <Td><button onClick={() => setEdC(c)} className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-brand" aria-label="Editar"><Pencil size={15} /></button></Td>
                     </tr>
@@ -211,7 +217,8 @@ export default function Config() {
                     <tr key={e.p} className="border-t border-ink/6 transition hover:bg-soft">
                       <Td cls="font-mono font-bold text-brand">{e.p}</Td><Td>{e.pr}</Td><Td>{e.b}</Td><Td d>{e.g}</Td>
                       <Td cls={clsx("num font-extrabold", !rs.length && "text-vinho-500")}>{visitas(rs)}</Td><Td d cls="num">{rs.length}</Td>
-                      <Td><button onClick={() => setEdE(e)} className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-brand" aria-label="Editar"><Pencil size={15} /></button></Td>
+                      <Td><div className="flex"><button onClick={() => setEdE(e)} className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-brand" aria-label="Editar"><Pencil size={15} /></button>
+                        <button onClick={() => setApagarE(e)} className="grid h-10 w-10 place-items-center rounded-lg text-ink/45 hover:bg-card hover:text-vinho-500" aria-label={`Excluir ${e.p}`}><Trash2 size={15} /></button></div></Td>
                     </tr>
                   );
                 })}
@@ -304,12 +311,29 @@ export default function Config() {
             </div>
             <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-ink/5 p-3 text-[13.5px] font-bold">
               <input type="checkbox" checked={edC.l === 1} onChange={e => setEdC({ ...edC, l: e.target.checked ? 1 : 0 })} className="h-4 w-4 accent-[#9c2a42]" />
-              Liderança (entra na meta e pode lançar)
+              Participa da meta (aparece em Observadores)
             </label>
             <button className="btn btn-vinho w-full" disabled={!edC.c || !edC.nome} onClick={() => { const { novo: _n, ...c } = edC; void salvarColab({ ...c, n: c.n || c.nome.split(" ")[0] }); setEdC(null); }}>Salvar</button>
           </>
         )}
       </Gaveta>
+
+      {/* confirmar exclusão de equipe */}
+      <AnimatePresence>
+        {apagarE && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setApagarE(null)} className="fixed inset-0 z-[60] bg-[#000]/60 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="fixed left-1/2 top-1/2 z-[70] w-[calc(100%-2rem)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-card p-6 shadow-2xl">
+              <h3 className="display text-[22px] text-brand">Excluir equipe {apagarE.p}?</h3>
+              <p className="mt-2 text-[13.5px] font-medium leading-relaxed text-ink/60">Ela some da lista de equipes do registro. O histórico de visitas já lançado <b>não é apagado</b>. Para reativar, cadastre de novo o mesmo prefixo em “Nova”. Para só pausar, desmarque “Equipe ativa” na edição.</p>
+              <div className="mt-5 flex gap-3">
+                <button className="btn btn-claro flex-1" onClick={() => setApagarE(null)}>Cancelar</button>
+                <button className="btn btn-vinho flex-1" onClick={() => { void excluirEquipe(apagarE.p); setApagarE(null); }}><Trash2 size={16} /> Excluir</button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* editor de equipe */}
       <Gaveta titulo={edE?.novo ? "Nova equipe" : "Editar equipe"} aberto={!!edE} onFechar={() => setEdE(null)}>
