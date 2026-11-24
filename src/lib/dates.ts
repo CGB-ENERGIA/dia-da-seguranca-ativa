@@ -37,6 +37,10 @@ export function agora(date = new Date()) {
 
 export const ehQuarta = (date = new Date()) => agora(date).weekday === 3;
 
+/** TESTE: dias fora de quarta liberados temporariamente para validação em campo. Remover depois do teste (e o mesmo dia no SQL). */
+export const DIAS_TESTE: string[] = ["2026-11-24"];
+export const liberado = (a: { d: string; weekday: number }) => a.weekday === 3 || DIAS_TESTE.includes(a.d);
+
 /** Nº da quarta-feira dentro do mês (1..5) a partir de YYYY-MM-DD. */
 export const semanaDoMes = (d: string) => Math.ceil(Number(d.slice(8, 10)) / 7);
 

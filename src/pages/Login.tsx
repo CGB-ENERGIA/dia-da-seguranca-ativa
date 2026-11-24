@@ -8,7 +8,7 @@ import { podeAcessar, useAuth, type Perfil } from "../store/auth";
 import { loginChapa, loginUsuario, RpcAusente, usuariosPublicos, type PerfilRemoto } from "../lib/remote";
 import { kvGet, kvSet } from "../lib/db";
 import { todosRegistros, useData } from "../store/data";
-import { agora } from "../lib/dates";
+import { agora, liberado } from "../lib/dates";
 import type { Colab } from "../lib/types";
 
 /** Campo de losangos (motivo do logo) que acende com o cursor e respira em ondas. */
@@ -217,7 +217,7 @@ export default function Login({ modo = "registrar" }: { modo?: "registrar" | "re
 
           <div className={"mt-8 items-center gap-2.5 rounded-2xl border border-ink/10 bg-card/60 px-4 py-3 text-[12.5px] font-semibold text-ink/55 " + (modo === "relatorio" ? "hidden" : "flex")}>
             <CalendarCheck2 size={17} className="shrink-0 text-vinho-500" />
-            {hoje.weekday === 3 ? "Hoje é quarta-feira: lançamentos liberados." : "Lançamentos são liberados às quartas-feiras."}
+            {liberado(hoje) ? "Hoje é quarta-feira: lançamentos liberados." : "Lançamentos são liberados às quartas-feiras."}
           </div>
         </motion.form>
       </section>

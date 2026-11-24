@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../store/auth";
 import { useData } from "../store/data";
-import { ACAO_CURTA, ACOES_ATIVAS, agora, brData, diaSemanaExtenso, novoId, proximaQuarta } from "../lib/dates";
+import { ACAO_CURTA, ACOES_ATIVAS, agora, liberado, brData, diaSemanaExtenso, novoId, proximaQuarta } from "../lib/dates";
 import { obterLocal, coordTexto, type Local } from "../lib/geo";
 import { carimbar } from "../lib/stamp";
 import { salvarFoto, salvarReg } from "../lib/db";
@@ -66,7 +66,7 @@ export default function Lancar() {
   // hora do servidor quando há internet (o relógio do aparelho pode ser mudado pelo usuário)
   const [relogio, setRelogio] = useState(() => agoraConfiavel());
   const hoje = agora(relogio);
-  const quarta = hoje.weekday === 3;
+  const quarta = liberado(hoje);
 
   const [busca, setBusca] = useState("");
   const [equipe, setEquipe] = useState("");
@@ -121,7 +121,7 @@ export default function Lancar() {
     await sincronizarRelogio();
     const quando = agoraConfiavel();
     setRelogio(quando);
-    if (agora(quando).weekday !== 3) { setProcessando(false); setCamErro("Hoje não é quarta-feira. Os lançamentos só são aceitos às quartas."); return; }
+    if (!liberado(agora(quando))) { setProcessando(false); setCamErro("Hoje não é quarta-feira. Os lançamentos só são aceitos às quartas."); return; }
     let l = local;
     if (!l) { setBuscandoLocal(true); l = await obterLocal(); setLocal(l); setBuscandoLocal(false); }
     if (!l) { setProcessando(false); setCamErro("Ative a localização do aparelho para registrar (a foto leva o local carimbado)."); return; }
@@ -181,7 +181,7 @@ export default function Lancar() {
     await sincronizarRelogio();
     const quando = agoraConfiavel();
     setRelogio(quando);
-    if (agora(quando).weekday !== 3) { setProcessando(false); setCamErro("Hoje não é quarta-feira. Os lançamentos só são aceitos às quartas."); fecharCamera(); return; }
+    if (!liberado(agora(quando))) { setProcessando(false); setCamErro("Hoje não é quarta-feira. Os lançamentos só são aceitos às quartas."); fecharCamera(); return; }
     let l = local;
     if (!l) { setBuscandoLocal(true); l = await obterLocal(); setLocal(l); setBuscandoLocal(false); }
     if (!l) { setProcessando(false); setCamErro("Ative a localização do aparelho para registrar (a foto leva o local carimbado)."); return; }
@@ -200,7 +200,7 @@ export default function Lancar() {
     setProcessando(true);
     const primeira = fotos[0];
     const a = agora(primeira.quando); // vale o momento da primeira foto
-    if (a.weekday !== 3) { setProcessando(false); setCamErro("A foto não foi tirada numa quarta-feira."); return; }
+    if (!liberado(a)) { setProcessando(false); setCamErro("A foto não foi tirada numa quarta-feira."); return; }
     const nome = nomeArquivo(colab.c, equipe, a.d, a.t);
     const ids: string[] = [];
     for (let i = 0; i < fotos.length; i++) {

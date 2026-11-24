@@ -8,7 +8,7 @@ import { Logo, TemaToggle } from "./ui";
 import { useAuth } from "../store/auth";
 import { useData } from "../store/data";
 import { sincronizar, useSync } from "../lib/sync";
-import { agora } from "../lib/dates";
+import { agora, liberado } from "../lib/dates";
 
 /** Moldura enxuta da tela de registro (link dos observadores). */
 export default function RegistrarShell() {
@@ -17,7 +17,7 @@ export default function RegistrarShell() {
   const [senhaAberta, setSenhaAberta] = useState(false);
   const colab = useData(s => (chapa ? s.mapa.get(chapa) : undefined));
   const { pendentes, online, sincronizando } = useSync();
-  const quarta = agora().weekday === 3;
+  const quarta = liberado(agora());
 
   return (
     <div className="flex h-full flex-col bg-canvas">
