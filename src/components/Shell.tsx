@@ -14,7 +14,7 @@ const ITENS: { to: string; rot: string; icone: typeof LayoutDashboard; fim?: boo
   { to: "/relatorio/equipes", rot: "Equipes", icone: Waypoints, min: "consulta" },
   { to: "/relatorio/insights", rot: "Insights", icone: Sparkles, min: "consulta" },
   { to: "/relatorio/banco", rot: "Banco de dados", icone: Database, min: "gestor" },
-  { to: "/relatorio/config", rot: "Configurações", icone: Settings2, min: "gestor" },
+  { to: "/relatorio/config", rot: "Metas", icone: Settings2, min: "gestor" },
   { to: "/relatorio/usuarios", rot: "Usuários", icone: UserCog, min: "admin" },
 ];
 const TITULOS: Record<string, [string, string]> = {
@@ -24,7 +24,7 @@ const TITULOS: Record<string, [string, string]> = {
   "/relatorio/usuarios": ["Gestão", "Usuários"],
   "/relatorio/colaboradores": ["Desempenho", "Colaboradores"],
   "/relatorio/equipes": ["Cobertura", "Equipes visitadas"],
-  "/relatorio/config": ["Gestão", "Configurações"],
+  "/relatorio/config": ["Gestão", "Metas"],
 };
 
 const guardar = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* sem storage */ } };

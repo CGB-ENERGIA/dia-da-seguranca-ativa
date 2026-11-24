@@ -144,7 +144,7 @@ export function calcularInsights(filtradas: Linha[], todas: Linha[], f: Filtros,
   });
   if (total) cards.push({
     tom: foraCadastro / total <= 0.02 ? "bom" : "atencao", icone: "dados", titulo: "Qualidade dos dados", valor: pct(1 - foraCadastro / total),
-    texto: foraCadastro ? `${foraCadastro} lançamentos com equipe fora do cadastro. Corrija em Configurações > Equipes.` : "Todas as equipes lançadas existem no cadastro.",
+    texto: foraCadastro ? `${foraCadastro} lançamentos com equipe fora do cadastro. Corrija em Metas > Equipes.` : "Todas as equipes lançadas existem no cadastro.",
   });
 
   // quartas depois do último lançamento (dados ainda não recebidos) não entram nas séries

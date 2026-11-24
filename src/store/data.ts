@@ -4,7 +4,7 @@ import { kvGet, kvSet, regsLocais } from "../lib/db";
 import { ehLideranca } from "../lib/lideranca";
 import { baixarRegs, gravarConfig, lerColaboradoresRemotos, lerConfig, remotoAtivo } from "../lib/remote";
 
-/** Alterações feitas na aba Configurações; ficam por cima do cadastro importado. */
+/** Alterações feitas na aba Metas; ficam por cima do cadastro importado. */
 export interface Edicoes {
   colabs: Record<number, Colab>;
   equipes: Record<string, Equipe>;
