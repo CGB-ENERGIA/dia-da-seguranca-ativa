@@ -38,7 +38,7 @@ export function agora(date = new Date()) {
 export const ehQuarta = (date = new Date()) => agora(date).weekday === 3;
 
 /** APRESENTAÇÃO: 24/11/2026 liberado temporariamente; remover depois (e voltar o SQL com supabase/voltar-so-quartas.sql). */
-export const DIAS_TESTE: string[] = ["2026-11-24"];
+export const DIAS_TESTE: string[] = [];
 export const liberado = (a: { d: string; weekday: number }) => a.weekday === 3 || DIAS_TESTE.includes(a.d);
 
 /** Nº da quarta-feira dentro do mês (1..5) a partir de YYYY-MM-DD. */
