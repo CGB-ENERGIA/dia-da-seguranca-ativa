@@ -11,7 +11,7 @@ import { useData } from "../store/data";
 import { ACAO_CURTA, ACOES_ATIVAS, agora, liberado, brData, diaSemanaExtenso, novoId, proximaQuarta } from "../lib/dates";
 import { obterLocal, coordTexto, type Local } from "../lib/geo";
 import { carimbar } from "../lib/stamp";
-import { salvarFoto, salvarReg } from "../lib/db";
+import { kvGet, kvSet, salvarFoto, salvarReg } from "../lib/db";
 import { contarPendentes, sincronizar } from "../lib/sync";
 import { remotoAtivo } from "../lib/remote";
 import { agoraConfiavel, carregarRelogio, sincronizarRelogio } from "../lib/relogio";
@@ -19,6 +19,8 @@ import type { Reg } from "../lib/types";
 
 const MAX_FOTOS = 5;
 interface FotoTirada { id: string; blob: Blob; url: string; quando: Date; local: Local }
+/** Rascunho do lançamento: em celulares com pouca memória o navegador pode recarregar a página enquanto a câmera está aberta. */
+interface Rascunho { d: string; equipe: string; acoes: number[]; fotos: { id: string; blob: Blob; quando: Date; local: Local }[] }
 
 const ICONES = [Siren, ClipboardCheck, Wrench, HardHat, Truck, GraduationCap];
 
@@ -86,6 +88,25 @@ export default function Lancar() {
   const video = useRef<HTMLVideoElement>(null);
   const [ar, setAr] = useState(4 / 3);
 
+  // rascunho: restaura equipe, ações e fotos se a página foi recarregada (ex.: o Android encerrou o navegador para liberar memória)
+  const [rascunhoLido, setRascunhoLido] = useState(false);
+  useEffect(() => {
+    if (!chapa) return;
+    void kvGet<Rascunho | null>(`rascunho:${chapa}`).then(r => {
+      if (r && r.d === agora(agoraConfiavel()).d && (r.equipe || r.acoes?.length || r.fotos?.length)) {
+        setEquipe(r.equipe ?? ""); setAcoes(r.acoes ?? []);
+        const fs = (r.fotos ?? []).map(f => ({ ...f, url: URL.createObjectURL(f.blob) }));
+        setFotos(fs); setAtiva(Math.max(0, fs.length - 1));
+      }
+      setRascunhoLido(true);
+    });
+  }, [chapa]);
+  useEffect(() => {
+    if (!chapa || !rascunhoLido) return;
+    const vazio = salvo || (!equipe && !acoes.length && !fotos.length);
+    void kvSet(`rascunho:${chapa}`, vazio ? null : { d: hoje.d, equipe, acoes, fotos: fotos.map(({ id, blob, quando, local }) => ({ id, blob, quando, local })) } satisfies Rascunho);
+  }, [chapa, rascunhoLido, equipe, acoes, fotos, salvo, hoje.d]);
+
   const pegarLocal = useCallback(async () => {
     setBuscandoLocal(true);
     setLocal(await obterLocal());
@@ -127,7 +148,10 @@ export default function Lancar() {
     if (!l) { setBuscandoLocal(true); l = await obterLocal(); setLocal(l); setBuscandoLocal(false); }
     if (!l) { setProcessando(false); setCamErro("Ative a localização do aparelho para registrar (a foto leva o local carimbado)."); return; }
     try {
-      const bmp = await createImageBitmap(f, { imageOrientation: "from-image" });
+      // a câmera de 50 MP gera fotos enormes: decodifica já reduzida (poupa ~200 MB de memória) e libera tudo depois
+      let bmp: ImageBitmap;
+      try { bmp = await createImageBitmap(f, { imageOrientation: "from-image", resizeWidth: 1600, resizeQuality: "medium" }); }
+      catch { bmp = await createImageBitmap(f, { imageOrientation: "from-image" }); }
       await montar(bmp, bmp.width, bmp.height, quando, l);
       bmp.close();
     } catch { setProcessando(false); setCamErro("Não consegui ler a foto. Tente de novo."); }

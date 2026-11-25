@@ -89,5 +89,8 @@ export async function carimbar(fonte: CanvasImageSource, w: number, h: number, c
   g.fillText("DIA DA SEGURANÇA ATIVA", W - pad, H - pad - 70 * u);
   g.textAlign = "left";
 
-  return new Promise<Blob>((ok, no) => cv.toBlob(b => (b ? ok(b) : no(new Error("canvas"))), "image/jpeg", 0.85));
+  return new Promise<Blob>((ok, no) => cv.toBlob(b => {
+    cv.width = cv.height = 0; // libera a memória do canvas na hora
+    b ? ok(b) : no(new Error("canvas"));
+  }, "image/jpeg", 0.82));
 }
